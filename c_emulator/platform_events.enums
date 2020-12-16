@@ -1,0 +1,4 @@
+// This file should contain comma separated enums that identify the
+// platform's events.  This file is included into riscv_hpmevents.h.
+// For example, each line should be of the form:
+//   E_event_name,
