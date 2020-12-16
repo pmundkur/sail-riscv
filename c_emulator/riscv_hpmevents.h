@@ -6,9 +6,7 @@
 
 typedef enum {
     E_not_defined = 0,
-#ifdef   EVENT_DEF_FILE
-#include EVENT_DEF_FILE
-#endif
+#include "platform_events.enums"
     E_branch_taken,
     E_last,
 } model_event_id;

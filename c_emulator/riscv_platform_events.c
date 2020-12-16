@@ -15,8 +15,12 @@ riscv_hpm_event platform_events[] =
 // We process any platform-specific events here.  This file will
 // differ on a per-platform basis.
 void signal_platform_events() {
-  // TODO: handle any instruction related events, and signal them
-  // using riscv_signal_event().
+  // For example, extract any instruction related events using
+  // zinstruction, which contains the executed instruction in the
+  // lower bits, and signal them using riscv_signal_event(), e.g:
+  //   riscv_signal_event(E_branch_taken);
+  // The event id should be defined in platform_events.enums
+
   uint64_t inst = zinstruction;
-  riscv_signal_event(E_branch_taken);
+  (void) inst;
 }
