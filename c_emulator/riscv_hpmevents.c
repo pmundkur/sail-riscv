@@ -30,9 +30,15 @@ static bool usable_event_map;
 // If we have more than 64 events, we will need multiple bitsets.
 uint64_t hpm_eventset;
 
-// Events communicated from the simulator
+// Events handled in and communicated from the simulator
 void riscv_signal_event(model_event_id id) {
   hpm_eventset |= 0x1 << id;
+}
+
+// Events communicated from the Sail model.
+unit riscv_signal_event_branch_taken(unit u) {
+    hpm_eventset |= 0x1 << E_branch_taken;
+    return UNIT;
 }
 
 // Update our event map on every write to the event selector registers.

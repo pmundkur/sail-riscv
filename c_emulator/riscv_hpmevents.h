@@ -9,12 +9,17 @@ typedef enum {
 #ifdef   EVENT_DEF_FILE
 #include EVENT_DEF_FILE
 #endif
+    E_branch_taken,
     E_last,
 } model_event_id;
 
 // Generic event signaller called from the simulator to signal
 // detected events.
 void riscv_signal_event(model_event_id id);
+
+// Called from the Sail model to signal each supported architectural
+// event, one signal function per event.
+unit riscv_signal_event_branch_taken(unit);
 
 // Called from the Sail model when hpm_event registers are written.
 unit riscv_write_mhpmevent(mach_bits regidx, mach_bits plat_event_id, mach_bits prev_event_id);

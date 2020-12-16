@@ -1,5 +1,8 @@
 /* The emulator fetch-execute-interrupt dispatch loop. */
 
+// register for model-external event processing code
+register instruction : bits(32)
+
 /* returns whether to increment the step count in the trace */
 function step(step_no : int) -> bool = {
   /* for step extensions */
@@ -30,6 +33,7 @@ function step(step_no : int) -> bool = {
           },
           /* non-error cases: */
           F_RVC(h) => {
+            instruction = EXTZ(h);
             let ast = decodeCompressed(h);
             if   get_config_print_instr()
             then {
@@ -45,6 +49,7 @@ function step(step_no : int) -> bool = {
              }
           },
           F_Base(w) => {
+            instruction = w;
             let ast = decode(w);
             if   get_config_print_instr()
             then {

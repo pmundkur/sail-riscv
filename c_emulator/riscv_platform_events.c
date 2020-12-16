@@ -15,5 +15,8 @@ riscv_hpm_event platform_events[] =
 // We process any platform-specific events here.  This file will
 // differ on a per-platform basis.
 void signal_platform_events() {
-  // Just a hook for now.
+  // TODO: handle any instruction related events, and signal them
+  // using riscv_signal_event().
+  uint64_t inst = zinstruction;
+  riscv_signal_event(E_branch_taken);
 }
