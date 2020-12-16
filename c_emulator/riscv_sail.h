@@ -58,3 +58,30 @@ struct zMcause {mach_bits zMcause_chunk_0;};
 struct zMcause zmcause, zscause;
 
 extern mach_bits zminstret;
+
+// HPM Counters
+
+// mhpmcounters
+typedef struct {
+  size_t len;
+  uint64_t *data;
+} zz5vecz8z5bv64z9;
+
+extern zz5vecz8z5bv64z9 zmhpmcounters;
+
+// mhpmevents
+#if   ARCH == RV32
+
+typedef struct {
+  size_t len;
+  uint64_t *data;
+} zz5vecz8z5bv32z9;
+extern zz5vecz8z5bv32z9 zmhpmevents;
+
+#elif ARCH == RV64
+
+extern zz5vecz8z5bv64z9 zmhpmevents;
+
+#else
+#error "Unknown architecture"
+#endif
