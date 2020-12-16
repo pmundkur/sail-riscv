@@ -128,6 +128,7 @@ function clause execute (BTYPE(imm, rs2, rs1, op)) = {
           RETIRE_FAIL;
         } else {
           set_next_pc(target);
+          plat_event_branch_taken();
           RETIRE_SUCCESS
         }
       }
