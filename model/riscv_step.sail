@@ -1,8 +1,5 @@
 /* The emulator fetch-execute-interrupt dispatch loop. */
 
-// register for model-external event processing code
-register instruction : bits(32)
-
 /* returns whether to increment the step count in the trace */
 function step(step_no : int) -> bool = {
   /* for step extensions */
