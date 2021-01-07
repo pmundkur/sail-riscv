@@ -145,6 +145,9 @@ let get_mem_bytes addr len =
 let event_branch_taken () =
   ()
 
+let write_mhpmevent _ =
+  ()
+
 (* returns starting value for PC, i.e. start of reset vector *)
 let init arch elf_file =
   platform_arch := arch;
