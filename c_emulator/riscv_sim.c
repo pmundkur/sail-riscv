@@ -242,6 +242,10 @@ char *process_args(int argc, char **argv)
       fprintf(stderr, "disabling RVC compressed instructions.\n");
       rv_enable_rvc = false;
       break;
+    case 'N':
+      fprintf(stderr, "enabling N extension.\n");
+      rv_enable_next = true;
+      break;
     case 'I':
       fprintf(stderr, "disabling writable misa CSR.\n");
       rv_enable_writable_misa = false;
