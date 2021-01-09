@@ -123,18 +123,17 @@ static void slow_process_hpm_selector(uint64_t plat_event_id) {
 
 void process_hpm_events(void) {
   uint64_t acc = hpm_eventset;
-  hpm_eventset = 0;
 
   for (int eid = 0; eid < E_last; eid++) {
-    event_info *ei = &event_map[eid];
     if (acc & 0x1) {
+      event_info *ei = &event_map[eid];
       if (usable_event_map) {
-        if (!ei->count) continue; // event is not selected
-        increment_hpm_counter(ei->regidx);
+        if (ei->count) increment_hpm_counter(ei->regidx);
       } else {
         slow_process_hpm_selector(ei->plat_event_id);
       }
     }
     acc >>= 1;
   }
+  hpm_eventset = 0;
 }
