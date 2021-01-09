@@ -33,11 +33,13 @@ uint64_t hpm_eventset;
 // Events handled in and communicated from the simulator
 void riscv_signal_event(model_event_id id) {
   hpm_eventset |= 0x1 << id;
+  fprintf(stderr, " signaling event %d (eventset = 0x%lx)\n", id, hpm_eventset);
 }
 
 // Events communicated from the Sail model.
 unit riscv_signal_event_branch_taken(unit u) {
     hpm_eventset |= 0x1 << E_branch_taken;
+    fprintf(stderr, " signalling event %d (eventset = 0x%lx)\n", E_branch_taken, hpm_eventset);
     return UNIT;
 }
 
@@ -52,10 +54,14 @@ unit riscv_write_mhpmevent(mach_bits regidx, mach_bits new_event_id, mach_bits p
     if (ei->plat_event_id == new_event_id) {
       ei->regidx = regidx;
       ei->count++;
+      fprintf(stderr, " mapping event %d (plat id %ld) to reg %ld (event refcnt = %d)\n",
+              eid, ei->plat_event_id, ei->regidx, ei->count);
     }
     // deregister the old value
     if (ei->plat_event_id == prev_event_id) {
       ei->count--;
+      fprintf(stderr, " removing mapping of event %d (plat id %ld) from reg %ld (event refcnt = %d)\n",
+              eid, ei->plat_event_id, ei->regidx, ei->count);
       assert(ei->count >= 0);
     }
   }
@@ -65,6 +71,8 @@ unit riscv_write_mhpmevent(mach_bits regidx, mach_bits new_event_id, mach_bits p
   bool usable = true;
   for (int eid = 0; eid < E_last; eid++) {
     if (event_map[eid].count > 1) {
+      fprintf(stderr, " event %d has refcnt %d, making eventmap unusable\n",
+              eid, event_map[eid].count);
       usable = false;
       break;
     }
@@ -74,6 +82,7 @@ unit riscv_write_mhpmevent(mach_bits regidx, mach_bits new_event_id, mach_bits p
 
 // Assumes the array is terminated by the entry for E_last.
 void init_platform_events(riscv_hpm_event *events) {
+  fprintf(stderr, " initializing platform events:\n");
   hpm_eventset = 0;
   usable_event_map = true;
 
@@ -89,6 +98,8 @@ void init_platform_events(riscv_hpm_event *events) {
     event_info *ei = &event_map[e->event];
 
     ei->plat_event_id = e->plat_event_id;
+    fprintf(stderr, " event %d mapped to platform id %ld\n",
+            e->event, e->plat_event_id);
     event_cnt++;
     e++;
   }
@@ -116,20 +127,35 @@ static void slow_process_hpm_selector(uint64_t plat_event_id) {
   for (uint64_t idx = 0; idx < nregs; idx++) {
     uint64_t pevid = zmhpmevents.data[idx]; // XXX: Test for RV32
     if (pevid == plat_event_id) {
+      fprintf(stderr, " incrementing regidx %ld for plat event %ld\n",
+              idx, plat_event_id);
       increment_hpm_counter(idx);
     }
   }
 }
 
 void process_hpm_events(void) {
+  if (hpm_eventset) {
+    fprintf(stderr, " processing eventset 0x%lx\n", hpm_eventset);
+  }
   uint64_t acc = hpm_eventset;
 
   for (int eid = 0; eid < E_last; eid++) {
     if (acc & 0x1) {
+      fprintf(stderr, " eid %d set in 0x%lx\n", eid, hpm_eventset);
       event_info *ei = &event_map[eid];
       if (usable_event_map) {
-        if (ei->count) increment_hpm_counter(ei->regidx);
+        if (ei->count) {
+          fprintf(stderr, " incrementing regidx %ld for event %d (plat event %ld)\n",
+                  ei->regidx, eid, ei->plat_event_id);
+          increment_hpm_counter(ei->regidx);
+        } else {
+          fprintf(stderr, " skipping unmapped event %d (plat event %ld)\n",
+                  eid, ei->plat_event_id);
+          // event is not selected
+        }
       } else {
+        fprintf(stderr, " unusable eventmap, using slow path\n");
         slow_process_hpm_selector(ei->plat_event_id);
       }
     }
