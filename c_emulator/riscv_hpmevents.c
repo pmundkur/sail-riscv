@@ -47,6 +47,7 @@ unit riscv_signal_event_branch_taken(unit u) {
 unit riscv_write_mhpmevent(mach_bits regidx, mach_bits new_event_id, mach_bits prev_event_id) {
   if (new_event_id == prev_event_id) return UNIT;
 
+  int new_mapped = 0, old_mapped = 0;
   for (int eid = 0; eid < E_last; eid++) {
     event_info *ei = &event_map[eid];
     if (ei->plat_event_id == 0) continue;
@@ -56,6 +57,7 @@ unit riscv_write_mhpmevent(mach_bits regidx, mach_bits new_event_id, mach_bits p
       ei->count++;
       fprintf(stderr, " mapping event %d (plat id %ld) to reg %ld (event refcnt = %d)\n",
               eid, ei->plat_event_id, ei->regidx, ei->count);
+      new_mapped = 1;
     }
     // deregister the old value
     if (ei->plat_event_id == prev_event_id) {
@@ -63,7 +65,14 @@ unit riscv_write_mhpmevent(mach_bits regidx, mach_bits new_event_id, mach_bits p
       fprintf(stderr, " removing mapping of event %d (plat id %ld) from reg %ld (event refcnt = %d)\n",
               eid, ei->plat_event_id, ei->regidx, ei->count);
       assert(ei->count >= 0);
+      old_mapped = 1;
     }
+  }
+  if (!new_mapped) {
+    fprintf(stderr, " discarding registering of unknown platform event id %ld\n", new_event_id);
+  }
+  if (!old_mapped) {
+    fprintf(stderr, " discarding deregistering of unknown platform event id %ld\n", prev_event_id);
   }
 
   // check whether the event map is still usable for a fast path: a
@@ -123,6 +132,8 @@ void increment_hpm_counter(uint64_t regidx) {
   if (!inhibit) {
     uint64_t *cntr = &zmhpmcounters.data[regidx];
     (*cntr)++;
+  } else {
+    fprintf(stderr, " not incrementing inhibited regidx %ld\n", regidx);
   }
 }
 
