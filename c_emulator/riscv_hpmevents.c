@@ -118,8 +118,12 @@ void reset_platform_events(void) {
 static const int nregs = 29;
 
 void increment_hpm_counter(uint64_t regidx) {
-  uint64_t *cntr = &zmhpmcounters.data[regidx];
-  (*cntr)++;
+  uint64_t counterin = z_get_Counterin_bits(zmcountinhibit);
+  int inhibit = 0x1 & (counterin >> (regidx + 3));
+  if (!inhibit) {
+    uint64_t *cntr = &zmhpmcounters.data[regidx];
+    (*cntr)++;
+  }
 }
 
 static void slow_process_hpm_selector(uint64_t plat_event_id) {

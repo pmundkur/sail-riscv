@@ -61,6 +61,10 @@ extern mach_bits zminstret;
 
 // HPM Counters
 
+struct zCounterin {uint64_t zCounterin_chunk_0;};
+extern struct zCounterin zmcountinhibit;
+uint64_t z_get_Counterin_bits(struct zCounterin);
+
 // mhpmcounters
 typedef struct {
   size_t len;
