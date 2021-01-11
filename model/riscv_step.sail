@@ -6,6 +6,7 @@ function step(step_no : int) -> bool = {
   ext_pre_step_hook();
 
   minstret_written = false;     /* see note for minstret */
+  inst_retired = false;
   let (retired, stepped) : (Retired, bool) =
     match dispatchInterrupt(cur_privilege) {
       Some(intr, priv) => {

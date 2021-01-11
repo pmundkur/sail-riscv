@@ -21,6 +21,6 @@ void signal_platform_events() {
   //   riscv_signal_event(E_branch_taken);
   // The event id should be defined in platform_events.enums
 
+  if (!zinst_retired) return;
   uint64_t inst = zinstruction;
-  (void) inst;
 }

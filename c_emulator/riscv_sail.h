@@ -92,3 +92,4 @@ extern zz5vecz8z5bv64z9 zmhpmevents;
 
 // info for event processing in the simulator
 extern uint64_t zinstruction;
+extern bool zinst_retired;
