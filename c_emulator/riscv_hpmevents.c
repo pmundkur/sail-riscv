@@ -159,6 +159,7 @@ void process_hpm_events(void) {
     if (acc & 0x1) {
       fprintf(stderr, " eid %d set in 0x%lx\n", eid, hpm_eventset);
       event_info *ei = &event_map[eid];
+      if (ei->plat_event_id == 0) continue;
       if (usable_event_map) {
         if (ei->count) {
           fprintf(stderr, " incrementing regidx %ld for event %d (plat event %ld)\n",
