@@ -31,7 +31,11 @@ function clause execute CSR(csr, rs1, rd, is_imm, op) = {
   else if not(ext_check_CSR(csr, cur_privilege, isWrite))
   then { ext_check_CSR_fail(); RETIRE_FAIL }
   else {
-    let csr_val = read_CSR(csr); /* could have side-effects, so technically shouldn't perform for CSRW[I] with rd == 0 */
+    let csr_val : xlenbits = match (op, rd) {
+      /* CSRRW should not generate read side-effects if rd == 0 */
+      (CSRRW, 0b00000) => zeros(),
+      _                => read_CSR(csr),
+    };
     if isWrite then {
       let new_val : xlenbits = match op {
         CSRRW => rs1_val,
@@ -48,11 +52,6 @@ function clause execute CSR(csr, rs1, rd, is_imm, op) = {
     X(rd) = csr_val;
     RETIRE_SUCCESS
   }
-}
-
-mapping maybe_i : bool <-> string = {
-  true  <-> "i",
-  false <-> ""
 }
 
 mapping csr_mnemonic : csrop <-> string = {
