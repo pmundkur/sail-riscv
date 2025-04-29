@@ -49,10 +49,6 @@ function plat_mtval_has_illegal_inst_bits() -> bool = config base.mtval_has_ille
 function plat_rom_base() -> physaddrbits = to_bits(physaddrbits_len, config platform.rom.base : int)
 function plat_rom_size() -> physaddrbits = to_bits(physaddrbits_len, config platform.rom.size : int)
 
-/* Location of clock-interface, which should match with the spec in the DTB */
-function plat_clint_base() -> physaddrbits = to_bits(physaddrbits_len, config platform.clint.base : int)
-function plat_clint_size() -> physaddrbits = to_bits(physaddrbits_len, config platform.clint.size : int)
-
 /* Location of HTIF ports */
 val plat_htif_tohost = pure {c: "plat_htif_tohost", lem: "plat_htif_tohost"} : unit -> physaddrbits
 function plat_htif_tohost () = to_bits(physaddrbits_len, elf_tohost ())
@@ -88,117 +84,105 @@ function within_phys_mem forall 'n, 'n <= max_mem_access. (Physaddr(addr) : phys
   }
 }
 
-function within_clint forall 'n, 0 < 'n <= max_mem_access . (Physaddr(addr) : physaddr, width : int('n)) -> bool = {
-  /* To avoid overflow issues when physical memory extends to the end
-   * of the addressable range, we need to perform address bound checks
-   * on unsigned unbounded integers.
-   */
-  let addr_int       = unsigned(addr);
-  let clint_base_int = unsigned(plat_clint_base ());
-  let clint_size_int = unsigned(plat_clint_size ());
-    clint_base_int <= addr_int
-  & (addr_int + sizeof('n)) <= (clint_base_int + clint_size_int)
-}
-
 function within_htif_writable forall 'n, 0 < 'n <= max_mem_access . (Physaddr(addr) : physaddr, width : int('n)) -> bool =
     plat_htif_tohost() == addr | (plat_htif_tohost() + 4 == addr & width == 4)
 
 function within_htif_readable forall 'n, 0 < 'n <= max_mem_access . (Physaddr(addr) : physaddr, width : int('n)) -> bool =
     plat_htif_tohost() == addr | (plat_htif_tohost() + 4 == addr & width == 4)
 
-/* CLINT (Core Local Interruptor), based on Spike. */
-
 function plat_insns_per_tick() -> int = config platform.instructions_per_tick
 
-// Each hart has a memory-mapped mtimecmp register. Typically these are
-// exposed as an array in CLINT. The CLINT implementation here is currently
-// hard-coded to use the mtimecmp for hart 0.
+// Each hart has a memory-mapped mtimecmp register.
 register mtimecmp : bits(64)
 
 // Unlike mtimecmp, stimecmp is a real CSR; not memory mapped.
 register stimecmp : bits(64)
 
-/* CLINT memory-mapped IO */
+/* Memory-mapped IO for interrupt handling. */
 
-/* relative address map:
- *
- * 0000 msip hart 0         -- memory-mapped software interrupt
- * 0004 msip hart 1
- * 4000 mtimecmp hart 0 lo  -- memory-mapped timer thresholds
- * 4004 mtimecmp hart 0 hi
- * 4008 mtimecmp hart 1 lo
- * 400c mtimecmp hart 1 hi
- * bff8 mtime lo            -- memory-mapped clocktimer value
- * bffc mtime hi
- */
+let MIP_ADDR         : physaddrbits = to_bits(physaddrbits_len, config platform.mip_addr : int)
+let MTIMECMP_ADDR    : physaddrbits = to_bits(physaddrbits_len, config platform.mtimecmp_addr : int)
+let MTIMECMP_ADDR_HI : physaddrbits = MTIMECMP_ADDR + 4
+let MTIME_ADDR       : physaddrbits = to_bits(physaddrbits_len, config platform.mtime_addr : int)
+let MTIME_ADDR_HI    : physaddrbits = MTIME_ADDR + 4
 
-let MSIP_BASE        : physaddrbits = zero_extend(0x00000)
-let MTIMECMP_BASE    : physaddrbits = zero_extend(0x04000)
-let MTIMECMP_BASE_HI : physaddrbits = zero_extend(0x04004)
-let MTIME_BASE       : physaddrbits = zero_extend(0x0bff8)
-let MTIME_BASE_HI    : physaddrbits = zero_extend(0x0bffc)
+function within_intr_mmio forall 'n, 0 < 'n <= max_mem_access . (Physaddr(addr) : physaddr, width : int('n)) -> bool = {
+  /* To avoid overflow issues when physical memory extends to the end
+   * of the addressable range, we need to perform address bound checks
+   * on unsigned unbounded integers.
+   */
+  let addr_lo = unsigned(addr);
+  let addr_hi = addr_lo + width;
 
-val clint_load : forall 'n, 'n > 0. (AccessType(ext_access_type), physaddr, int('n)) -> MemoryOpResult(bits(8 * 'n))
-function clint_load(t, Physaddr(addr), width) = {
-  let addr = addr - plat_clint_base ();
+  // mip is a MXLEN-bit register.
+  let mip_addr = unsigned(MIP_ADDR);
+  if   mip_addr <= addr_lo & addr_hi <= mip_addr + xlen_bytes
+  then return true;
+
+  // mtime and mtimecmp are 64-bit memory-mapped registers on both
+  // RV32 and RV64.
+  let mtimecmp_addr = unsigned(MTIMECMP_ADDR);
+  if mtimecmp_addr <= addr_lo & addr_hi <= mtimecmp_addr + 8
+  then return true;
+  let mtime_addr = unsigned(MTIME_ADDR);
+  if mtime_addr <= addr_lo & addr_hi <= mtime_addr + 8
+  then return true;
+
+  false
+}
+
+val intr_mmio_load : forall 'n, 'n > 0. (AccessType(ext_access_type), physaddr, int('n)) -> MemoryOpResult(bits(8 * 'n))
+function intr_mmio_load(t, Physaddr(addr), width) = {
   /* FIXME: For now, only allow exact aligned access. */
-  if addr == MSIP_BASE & ('n == 8 | 'n == 4)
-  then {
+  if addr == MIP_ADDR & ('n == 8 | 'n == 4) then {
     if   get_config_print_platform()
-    then print_platform("clint[" ^ BitStr(addr) ^ "] -> " ^ BitStr(mip[MSI]));
-    Ok(zero_extend(sizeof(8 * 'n), mip[MSI]))
-  }
-  else if addr == MTIMECMP_BASE & ('n == 4)
-  then {
+    then print_platform("mip@" ^ BitStr(addr) ^ " -> " ^ BitStr(mip[MSI]));
+    return Ok(zero_extend(sizeof(8 * 'n), mip[MSI]))
+  };
+  if addr == MTIMECMP_ADDR & ('n == 4) then {
     if   get_config_print_platform()
-    then print_platform("clint<4>[" ^ BitStr(addr) ^ "] -> " ^ BitStr(mtimecmp[31..0]));
+    then print_platform("mtimecmp<4>@" ^ BitStr(addr) ^ " -> " ^ BitStr(mtimecmp[31..0]));
     /* FIXME: Redundant zero_extend currently required by Lem backend */
-    Ok(zero_extend(32, mtimecmp[31..0]))
-  }
-  else if addr == MTIMECMP_BASE & ('n == 8)
-  then {
+    return Ok(zero_extend(32, mtimecmp[31..0]))
+  };
+  if addr == MTIMECMP_ADDR & ('n == 8) then {
     if   get_config_print_platform()
-    then print_platform("clint<8>[" ^ BitStr(addr) ^ "] -> " ^ BitStr(mtimecmp));
+    then print_platform("mtimecmp<8>@" ^ BitStr(addr) ^ " -> " ^ BitStr(mtimecmp));
     /* FIXME: Redundant zero_extend currently required by Lem backend */
-    Ok(zero_extend(64, mtimecmp))
-  }
-  else if addr == MTIMECMP_BASE_HI & ('n == 4)
-  then {
+    return Ok(zero_extend(64, mtimecmp))
+  };
+  if addr == MTIMECMP_ADDR_HI & ('n == 4) then {
     if   get_config_print_platform()
-    then print_platform("clint-hi<4>[" ^ BitStr(addr) ^ "] -> " ^ BitStr(mtimecmp[63..32]));
+    then print_platform("mtimecmp-hi<4>@" ^ BitStr(addr) ^ " -> " ^ BitStr(mtimecmp[63..32]));
     /* FIXME: Redundant zero_extend currently required by Lem backend */
-    Ok(zero_extend(32, mtimecmp[63..32]))
-  }
-  else if addr == MTIME_BASE & ('n == 4)
-  then {
+    return Ok(zero_extend(32, mtimecmp[63..32]))
+  };
+  if addr == MTIME_ADDR & ('n == 4) then {
     if   get_config_print_platform()
-    then print_platform("clint[" ^ BitStr(addr) ^ "] -> " ^ BitStr(mtime));
-    Ok(zero_extend(32, mtime[31..0]))
-  }
-  else if addr == MTIME_BASE & ('n == 8)
-  then {
+    then print_platform("mtime<4>@" ^ BitStr(addr) ^ " -> " ^ BitStr(mtime));
+    return Ok(zero_extend(32, mtime[31..0]))
+  };
+  if addr == MTIME_ADDR & ('n == 8) then {
     if   get_config_print_platform()
-    then print_platform("clint[" ^ BitStr(addr) ^ "] -> " ^ BitStr(mtime));
-    Ok(zero_extend(64, mtime))
-  }
-  else if addr == MTIME_BASE_HI & ('n == 4)
-  then {
+    then print_platform("mtime<8>@" ^ BitStr(addr) ^ " -> " ^ BitStr(mtime));
+    return Ok(zero_extend(64, mtime))
+  };
+  if addr == MTIME_ADDR_HI & ('n == 4) then {
     if   get_config_print_platform()
-    then print_platform("clint[" ^ BitStr(addr) ^ "] -> " ^ BitStr(mtime));
-    Ok(zero_extend(32, mtime[63..32]))
-  }
-  else {
-    if   get_config_print_platform()
-    then print_platform("clint[" ^ BitStr(addr) ^ "] -> <not-mapped>");
-    match t {
-      InstructionFetch() => Err(E_Fetch_Access_Fault()),
-      Read(Data) => Err(E_Load_Access_Fault()),
-      _          => Err(E_SAMO_Access_Fault())
-    }
+    then print_platform("mtime-hi<4>@" ^ BitStr(addr) ^ " -> " ^ BitStr(mtime));
+    return Ok(zero_extend(32, mtime[63..32]))
+  };
+
+  if   get_config_print_platform()
+  then print_platform("intr-mmio[" ^ BitStr(addr) ^ "] -> <not-mapped>");
+  match t {
+    InstructionFetch() => Err(E_Fetch_Access_Fault()),
+    Read(Data) => Err(E_Load_Access_Fault()),
+    _          => Err(E_SAMO_Access_Fault())
   }
 }
 
-function clint_dispatch() -> unit = {
+function intr_mmio_dispatch() -> unit = {
   mip[MTI] = bool_to_bits(mtimecmp <=_u mtime);
   if currentlyEnabled(Ext_Sstc) then {
     mip[STI] = bool_to_bits(stimecmp <=_u mtime);
@@ -208,56 +192,62 @@ function clint_dispatch() -> unit = {
     (if currentlyEnabled(Ext_Sstc) then ", mip.STI <- " ^ BitStr(mip[STI]) else "") ^ ")");
 }
 
-val clint_store: forall 'n, 'n > 0. (physaddr, int('n), bits(8 * 'n)) -> MemoryOpResult(bool)
-function clint_store(Physaddr(addr), width, data) = {
-  let addr = addr - plat_clint_base ();
-  if addr == MSIP_BASE & ('n == 8 | 'n == 4) then {
+val intr_mmio_store: forall 'n, 'n > 0. (physaddr, int('n), bits(8 * 'n)) -> MemoryOpResult(bool)
+function intr_mmio_store(Physaddr(addr), width, data) = {
+  /* FIXME: For now, only allow exact aligned access. */
+  if addr == MIP_ADDR & ('n == 8 | 'n == 4) then {
     if   get_config_print_platform()
-    then print_platform("clint[" ^ BitStr(addr) ^ "] <- " ^ BitStr(data) ^ " (mip.MSI <- " ^ BitStr(data[0]) ^ ")");
+    then print_platform("mip@" ^ BitStr(addr) ^ " <- " ^ BitStr(data) ^ " (mip.MSI <- " ^ BitStr(data[0]) ^ ")");
     mip[MSI] = [data[0]];
-    clint_dispatch();
-    Ok(true)
-  } else if addr == MTIMECMP_BASE & 'n == 8 then {
+    intr_mmio_dispatch();
+    return Ok(true)
+  };
+  if addr == MTIMECMP_ADDR & 'n == 8 then {
     if   get_config_print_platform()
-    then print_platform("clint<8>[" ^ BitStr(addr) ^ "] <- " ^ BitStr(data) ^ " (mtimecmp)");
+    then print_platform("mtimecmp<8>@" ^ BitStr(addr) ^ " <- " ^ BitStr(data) ^ " (mtimecmp)");
     mtimecmp = zero_extend(64, data); /* FIXME: Redundant zero_extend currently required by Lem backend */
-    clint_dispatch();
-    Ok(true)
-  } else if addr == MTIMECMP_BASE & 'n == 4 then {
+    intr_mmio_dispatch();
+    return Ok(true)
+  };
+  if addr == MTIMECMP_ADDR & 'n == 4 then {
     if   get_config_print_platform()
-    then print_platform("clint<4>[" ^ BitStr(addr) ^ "] <- " ^ BitStr(data) ^ " (mtimecmp)");
+    then print_platform("mtimecmp<4>@" ^ BitStr(addr) ^ " <- " ^ BitStr(data) ^ " (mtimecmp)");
     mtimecmp = vector_update_subrange(mtimecmp, 31, 0, zero_extend(32, data));  /* FIXME: Redundant zero_extend currently required by Lem backend */
-    clint_dispatch();
-    Ok(true)
-  } else if addr == MTIMECMP_BASE_HI & 'n == 4 then {
+    intr_mmio_dispatch();
+    return Ok(true)
+  };
+  if addr == MTIMECMP_ADDR_HI & 'n == 4 then {
     if   get_config_print_platform()
-    then print_platform("clint<4>[" ^ BitStr(addr) ^ "] <- " ^ BitStr(data) ^ " (mtimecmp)");
+    then print_platform("mtimecmp-hi<4>@" ^ BitStr(addr) ^ " <- " ^ BitStr(data) ^ " (mtimecmp)");
     mtimecmp = vector_update_subrange(mtimecmp, 63, 32, zero_extend(32, data)); /* FIXME: Redundant zero_extend currently required by Lem backend */
-    clint_dispatch();
-    Ok(true)
-  } else if addr == MTIME_BASE & 'n == 8 then {
+    intr_mmio_dispatch();
+    return Ok(true)
+  };
+  if addr == MTIME_ADDR & 'n == 8 then {
     if   get_config_print_platform()
-    then print_platform("clint<8>[" ^ BitStr(addr) ^ "] <- " ^ BitStr(data) ^ " (mtime)");
+    then print_platform("mtime<8>@" ^ BitStr(addr) ^ " <- " ^ BitStr(data) ^ " (mtime)");
     mtime = data;
-    clint_dispatch();
-    Ok(true)
-  } else if addr == MTIME_BASE & 'n == 4 then {
+    intr_mmio_dispatch();
+    return Ok(true)
+  };
+  if addr == MTIME_ADDR & 'n == 4 then {
     if   get_config_print_platform()
-    then print_platform("clint<4>[" ^ BitStr(addr) ^ "] <- " ^ BitStr(data) ^ " (mtime)");
+    then print_platform("mtime<4>@" ^ BitStr(addr) ^ " <- " ^ BitStr(data) ^ " (mtime)");
     mtime[31 .. 0] = data;
-    clint_dispatch();
-    Ok(true)
-  } else if addr == MTIME_BASE_HI & 'n == 4 then {
+    intr_mmio_dispatch();
+    return Ok(true)
+  };
+  if addr == MTIME_ADDR_HI & 'n == 4 then {
     if   get_config_print_platform()
-    then print_platform("clint<4>[" ^ BitStr(addr) ^ "] <- " ^ BitStr(data) ^ " (mtime)");
+    then print_platform("mtime-hi<4>@" ^ BitStr(addr) ^ " <- " ^ BitStr(data) ^ " (mtime)");
     mtime[63 .. 32] = data;
-    clint_dispatch();
-    Ok(true)
-  } else {
-    if   get_config_print_platform()
-    then print_platform("clint[" ^ BitStr(addr) ^ "] <- " ^ BitStr(data) ^ " (<unmapped>)");
-    Err(E_SAMO_Access_Fault())
-  }
+    intr_mmio_dispatch();
+    return Ok(true)
+  };
+
+  if   get_config_print_platform()
+  then print_platform("intr-mmio[" ^ BitStr(addr) ^ "] <- " ^ BitStr(data) ^ " (<unmapped>)");
+  Err(E_SAMO_Access_Fault())
 }
 
 val tick_clock : unit -> unit
@@ -266,7 +256,7 @@ function tick_clock() = {
   then mcycle = mcycle + 1;
 
   mtime  = mtime  + 1;
-  clint_dispatch()
+  intr_mmio_dispatch()
 }
 
 /* Basic terminal character I/O. */
@@ -395,21 +385,21 @@ function htif_tick() = {
 /* Top-level MMIO dispatch */
 $ifndef RVFI_DII
 function within_mmio_readable forall 'n, 0 < 'n <= max_mem_access . (addr : physaddr, width : int('n)) -> bool =
-  within_clint(addr, width) | (within_htif_readable(addr, width) & 1 <= 'n)
+  within_intr_mmio(addr, width) | (within_htif_readable(addr, width) & 1 <= 'n)
 $else
 function within_mmio_readable forall 'n, 0 < 'n <= max_mem_access . (addr : physaddr, width : int('n)) -> bool = false
 $endif
 
 $ifndef RVFI_DII
 function within_mmio_writable forall 'n, 0 < 'n <= max_mem_access . (addr : physaddr, width : int('n)) -> bool =
-  within_clint(addr, width) | (within_htif_writable(addr, width) & 'n <= 8)
+  within_intr_mmio(addr, width) | (within_htif_writable(addr, width) & 'n <= 8)
 $else
 function within_mmio_writable forall 'n, 0 < 'n <= max_mem_access . (addr : physaddr, width : int('n)) -> bool = false
 $endif
 
 function mmio_read forall 'n, 0 < 'n <= max_mem_access . (t : AccessType(ext_access_type), paddr : physaddr, width : int('n)) -> MemoryOpResult(bits(8 * 'n)) =
-  if   within_clint(paddr, width)
-  then clint_load(t, paddr, width)
+  if   within_intr_mmio(paddr, width)
+  then intr_mmio_load(t, paddr, width)
   else if within_htif_readable(paddr, width) & (1 <= 'n)
   then htif_load(t, paddr, width)
   else match t {
@@ -419,8 +409,8 @@ function mmio_read forall 'n, 0 < 'n <= max_mem_access . (t : AccessType(ext_acc
   }
 
 function mmio_write forall 'n, 0 <'n <= max_mem_access . (paddr : physaddr, width : int('n), data: bits(8 * 'n)) -> MemoryOpResult(bool) =
-  if   within_clint(paddr, width)
-  then clint_store(paddr, width, data)
+  if   within_intr_mmio(paddr, width)
+  then intr_mmio_store(paddr, width, data)
   else if within_htif_writable(paddr, width) & 'n <= 8
   then htif_store(paddr, width, data)
   else Err(E_SAMO_Access_Fault())

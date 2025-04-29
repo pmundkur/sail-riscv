@@ -35,10 +35,9 @@
       "base": 4096,
       "size": 4096
     },
-    "clint": {
-      "base": 33554432,
-      "size": 786432
-    },
+    "mip_addr": 33554432,
+    "mtimecmp_addr": 33570816,
+    "mtime_addr": 33603576,
     "instructions_per_tick": 2,
     "wfi_is_nop": true
   },
