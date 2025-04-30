@@ -111,9 +111,9 @@ function misaligned_order(n) = {
   }
 }
 
-val vmem_write_addr : forall 'width, is_mem_width('width).
+val vmem_write_addr : forall 'width 'ast, is_mem_width('width).
   (virtaddr, int('width), bits(8 * 'width), AccessType(ext_access_type), bool, bool, bool)
-  -> result(bool, ExecutionResult)
+  -> result(bool, ExecutionResult('ast))
 
 function vmem_write_addr(vaddr, width, data, acc, aq, rl, res) = {
   /* If the store is misaligned or an allowed misaligned access, split into `n`
@@ -173,9 +173,9 @@ function check_misaligned(vaddr : virtaddr, width : word_width) -> bool = {
   }
 }
 
-val vmem_read : forall 'width, is_mem_width('width).
+val vmem_read : forall 'width 'ast, is_mem_width('width).
   (regidx, xlenbits, int('width), AccessType(ext_access_type), bool, bool, bool)
-  -> result(bits(8 * 'width), ExecutionResult)
+  -> result(bits(8 * 'width), ExecutionResult('ast))
 
 function vmem_read(rs, offset, width, acc, aq, rl, res) = {
   /* Get the address, X(rs1) + offset.
@@ -238,9 +238,9 @@ function vmem_read(rs, offset, width, acc, aq, rl, res) = {
   Ok(data)
 }
 
-val vmem_write : forall 'width, is_mem_width('width).
+val vmem_write : forall 'width 'ast, is_mem_width('width).
   (regidx, xlenbits, int('width), bits(8 * 'width), AccessType(ext_access_type), bool, bool, bool)
-  -> result(bool, ExecutionResult)
+  -> result(bool, ExecutionResult('ast))
 
 function vmem_write(rs_addr, offset, width, data, acc, aq, rl, res) = {
   /* Get the address, X(rs_addr) (no offset).

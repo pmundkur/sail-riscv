@@ -28,7 +28,7 @@ mapping clause encdec = CSRImm(csr, imm, rd, op)
   <-> csr @ imm @ 0b1 @ encdec_csrop(op) @ encdec_reg(rd) @ 0b1110011
   when currentlyEnabled(Ext_Zicsr)
 
-function doCSR(csr : csreg, rs1_val : xlenbits, rd : regidx, op : csrop, is_CSR_Write: bool) -> ExecutionResult = {
+function doCSR(csr : csreg, rs1_val : xlenbits, rd : regidx, op : csrop, is_CSR_Write: bool) -> ExecutionResult(ast) = {
   if not(check_CSR(csr, cur_privilege, is_CSR_Write))
   then Illegal_Instruction()
   else if not(ext_check_CSR(csr, cur_privilege, is_CSR_Write))

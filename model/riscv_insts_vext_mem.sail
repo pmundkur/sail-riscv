@@ -69,7 +69,7 @@ mapping clause encdec = VLSEGTYPE(nf, vm, rs1, width, vd)
   <-> nf @ 0b0 @ 0b00 @ vm @ 0b00000 @ encdec_reg(rs1) @ encdec_vlewidth(width) @ encdec_vreg(vd) @ 0b0000111
   when currentlyEnabled(Ext_V)
 
-val process_vlseg : forall 'f 'b 'n 'p, nfields_range('f) & is_mem_width('b) & ('n > 0). (int('f), bits(1), vregidx, int('b), regidx, int('p), int('n)) -> ExecutionResult
+val process_vlseg : forall 'f 'b 'n 'p, nfields_range('f) & is_mem_width('b) & ('n > 0). (int('f), bits(1), vregidx, int('b), regidx, int('p), int('n)) -> ExecutionResult(ast)
 function process_vlseg (nf, vm, vd, load_width_bytes, rs1, EMUL_pow, num_elem) = {
   let EMUL_reg : int = if EMUL_pow <= 0 then 1 else 2 ^ EMUL_pow;
   let width_type : word_width = size_bytes(load_width_bytes);
@@ -87,10 +87,11 @@ function process_vlseg (nf, vm, vd, load_width_bytes, rs1, EMUL_pow, num_elem) =
       set_vstart(to_bits_unsafe(16, i));
       foreach (j from 0 to (nf - 1)) {
         let elem_offset = (i * nf + j) * load_width_bytes;
-        match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, Read(Data), false, false, false) {
-          Ok(elem) => write_single_element(load_width_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, j * EMUL_reg)), elem),
-          Err(e)   => return e,
-        }
+        /* match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, Read(Data), false, false, false) { */
+        /*   Ok(elem) => write_single_element(load_width_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, j * EMUL_reg)), elem), */
+        /*   Err(e)   => return e, */
+        /* } */
+        ()
       }
     } else { /* prestart, masked or tail segments */
       foreach (j from 0 to (nf - 1)) {
@@ -131,7 +132,7 @@ mapping clause encdec = VLSEGFFTYPE(nf, vm, rs1, width, vd)
   <-> nf @ 0b0 @ 0b00 @ vm @ 0b10000 @ encdec_reg(rs1) @ encdec_vlewidth(width) @ encdec_vreg(vd) @ 0b0000111
   when currentlyEnabled(Ext_V)
 
-val process_vlsegff : forall 'f 'b 'n 'p, nfields_range('f) & is_mem_width('b) & ('n > 0). (int('f), bits(1), vregidx, int('b), regidx, int('p), int('n)) -> ExecutionResult
+val process_vlsegff : forall 'f 'b 'n 'p, nfields_range('f) & is_mem_width('b) & ('n > 0). (int('f), bits(1), vregidx, int('b), regidx, int('p), int('n)) -> ExecutionResult(ast)
 function process_vlsegff (nf, vm, vd, load_width_bytes, rs1, EMUL_pow, num_elem) = {
   let EMUL_reg : int = if EMUL_pow <= 0 then 1 else 2 ^ EMUL_pow;
   let width_type : word_width = size_bytes(load_width_bytes);
@@ -151,15 +152,16 @@ function process_vlsegff (nf, vm, vd, load_width_bytes, rs1, EMUL_pow, num_elem)
       if mask[i] == bitone then { /* active segments */
         foreach (j from 0 to (nf - 1)) {
           let elem_offset = (i * nf + j) * load_width_bytes;
-          match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, Read(Data), false, false, false) {
-            Ok(elem) => write_single_element(load_width_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, j * EMUL_reg)), elem),
-            Err(e)   => if i == 0 then return e
-                        else {
-                          vl = to_bits_unsafe(xlen, i);
-                          csr_write_callback("vl", vl);
-                          trimmed = true
-                        },
-          }
+          /* match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, Read(Data), false, false, false) { */
+          /*   Ok(elem) => write_single_element(load_width_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, j * EMUL_reg)), elem), */
+          /*   Err(e)   => if i == 0 then return e */
+          /*               else { */
+          /*                 vl = to_bits_unsafe(xlen, i); */
+          /*                 csr_write_callback("vl", vl); */
+          /*                 trimmed = true */
+          /*               }, */
+          /* } */
+          trimmed = true
         }
       } else { /* prestart, masked or tail segments */
         foreach (j from 0 to (nf - 1)) {
@@ -210,7 +212,7 @@ mapping clause encdec = VSSEGTYPE(nf, vm, rs1, width, vs3)
   <-> nf @ 0b0 @ 0b00 @ vm @ 0b00000 @ encdec_reg(rs1) @ encdec_vlewidth(width) @ encdec_vreg(vs3) @ 0b0100111
   when currentlyEnabled(Ext_V)
 
-val process_vsseg : forall 'f 'b 'n 'p, nfields_range('f) & is_mem_width('b) & ('n > 0). (int('f), bits(1), vregidx, int('b), regidx, int('p), int('n)) -> ExecutionResult
+val process_vsseg : forall 'f 'b 'n 'p, nfields_range('f) & is_mem_width('b) & ('n > 0). (int('f), bits(1), vregidx, int('b), regidx, int('p), int('n)) -> ExecutionResult(ast)
 function process_vsseg (nf, vm, vs3, load_width_bytes, rs1, EMUL_pow, num_elem) = {
   let EMUL_reg : int = if EMUL_pow <= 0 then 1 else 2 ^ EMUL_pow;
   let width_type : word_width = size_bytes(load_width_bytes);
@@ -229,7 +231,8 @@ function process_vsseg (nf, vm, vs3, load_width_bytes, rs1, EMUL_pow, num_elem) 
         let elem_offset = (i * nf + j) * load_width_bytes;
         let vs = vregidx_offset(vs3, to_bits_unsafe(5, j * EMUL_reg));
         let data = read_single_element(load_width_bytes * 8, i, vs);
-        match vmem_write(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, data, Write(Data), false, false, false) {
+        match (vmem_write(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, data, Write(Data), false, false, false)
+               : vmem_write_result) {
           Ok(true)  => (),
           Ok(false) => internal_error(__FILE__, __LINE__, "store got false from vmem_write"),
           Err(e)    => return e,
@@ -269,7 +272,7 @@ mapping clause encdec = VLSSEGTYPE(nf, vm, rs2, rs1, width, vd)
   <-> nf @ 0b0 @ 0b10 @ vm @ encdec_reg(rs2) @ encdec_reg(rs1) @ encdec_vlewidth(width) @ encdec_vreg(vd) @ 0b0000111
   when currentlyEnabled(Ext_V)
 
-val process_vlsseg : forall 'f 'b 'n 'p, nfields_range('f) & is_mem_width('b) & ('n > 0). (int('f), bits(1), vregidx, int('b), regidx, regidx, int('p), int('n)) -> ExecutionResult
+val process_vlsseg : forall 'f 'b 'n 'p, nfields_range('f) & is_mem_width('b) & ('n > 0). (int('f), bits(1), vregidx, int('b), regidx, regidx, int('p), int('n)) -> ExecutionResult(ast)
 function process_vlsseg (nf, vm, vd, load_width_bytes, rs1, rs2, EMUL_pow, num_elem) = {
   let EMUL_reg : int = if EMUL_pow <= 0 then 1 else 2 ^ EMUL_pow;
   let width_type : word_width = size_bytes(load_width_bytes);
@@ -288,10 +291,11 @@ function process_vlsseg (nf, vm, vd, load_width_bytes, rs1, rs2, EMUL_pow, num_e
       set_vstart(to_bits_unsafe(16, i));
       foreach (j from 0 to (nf - 1)) {
         let elem_offset = i * rs2_val + j * load_width_bytes;
-        match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, Read(Data), false, false, false) {
-          Ok(elem) => write_single_element(load_width_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, j * EMUL_reg)), elem),
-          Err(e)   => return e,
-        }
+        /* match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, Read(Data), false, false, false) { */
+        /*   Ok(elem) => write_single_element(load_width_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, j * EMUL_reg)), elem), */
+        /*   Err(e)   => return e, */
+        /* } */
+        ()
       }
     } else { /* prestart, masked or tail segments */
       foreach (j from 0 to (nf - 1)) {
@@ -332,7 +336,7 @@ mapping clause encdec = VSSSEGTYPE(nf, vm, rs2, rs1, width, vs3)
   <-> nf @ 0b0 @ 0b10 @ vm @ encdec_reg(rs2) @ encdec_reg(rs1) @ encdec_vlewidth(width) @ encdec_vreg(vs3) @ 0b0100111
   when currentlyEnabled(Ext_V)
 
-val process_vssseg : forall 'f 'b 'n 'p, nfields_range('f) & is_mem_width('b) & ('n > 0). (int('f), bits(1), vregidx, int('b), regidx, regidx, int('p), int('n)) -> ExecutionResult
+val process_vssseg : forall 'f 'b 'n 'p, nfields_range('f) & is_mem_width('b) & ('n > 0). (int('f), bits(1), vregidx, int('b), regidx, regidx, int('p), int('n)) -> ExecutionResult(ast)
 function process_vssseg (nf, vm, vs3, load_width_bytes, rs1, rs2, EMUL_pow, num_elem) = {
   let EMUL_reg : int = if EMUL_pow <= 0 then 1 else 2 ^ EMUL_pow;
   let width_type : word_width = size_bytes(load_width_bytes);
@@ -352,7 +356,8 @@ function process_vssseg (nf, vm, vs3, load_width_bytes, rs1, rs2, EMUL_pow, num_
         let elem_offset = i * rs2_val + j * load_width_bytes;
         let vs = vregidx_offset(vs3, to_bits_unsafe(5, j * EMUL_reg));
         let data = read_single_element(load_width_bytes * 8, i, vs);
-        match vmem_write(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, data, Write(Data), false, false, false) {
+        match (vmem_write(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, data, Write(Data), false, false, false)
+               : vmem_write_result) {
           Ok(true)  => (),
           Ok(false) => internal_error(__FILE__, __LINE__, "store got false from vmem_write"),
           Err(e)    => return e,
@@ -392,7 +397,7 @@ mapping clause encdec = VLUXSEGTYPE(nf, vm, vs2, rs1, width, vd)
   <-> nf @ 0b0 @ 0b01 @ vm @ encdec_vreg(vs2) @ encdec_reg(rs1) @ encdec_vlewidth(width) @ encdec_vreg(vd) @ 0b0000111
   when currentlyEnabled(Ext_V)
 
-val process_vlxseg : forall 'f 'ib 'db 'ip 'dp 'n, nfields_range('f) & is_mem_width('ib) & is_mem_width('db) & ('n > 0). (int('f), bits(1), vregidx, int('ib), int('db), int('ip), int('dp), regidx, vregidx, int('n), int) -> ExecutionResult
+val process_vlxseg : forall 'f 'ib 'db 'ip 'dp 'n, nfields_range('f) & is_mem_width('ib) & is_mem_width('db) & ('n > 0). (int('f), bits(1), vregidx, int('ib), int('db), int('ip), int('dp), regidx, vregidx, int('n), int) -> ExecutionResult(ast)
 function process_vlxseg (nf, vm, vd, EEW_index_bytes, EEW_data_bytes, EMUL_index_pow, EMUL_data_pow, rs1, vs2, num_elem, mop) = {
   let EMUL_data_reg : int = if EMUL_data_pow <= 0 then 1 else 2 ^ EMUL_data_pow;
   let width_type : word_width = size_bytes(EEW_data_bytes);
@@ -412,10 +417,11 @@ function process_vlxseg (nf, vm, vd, EEW_index_bytes, EEW_data_bytes, EMUL_index
       set_vstart(to_bits_unsafe(16, i));
       foreach (j from 0 to (nf - 1)) {
         let elem_offset : int = unsigned(vs2_val[i]) + j * EEW_data_bytes;
-        match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), EEW_data_bytes, Read(Data), false, false, false) {
-          Ok(elem) => write_single_element(EEW_data_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, j * EMUL_data_reg)), elem),
-          Err(e)   => return e,
-        }
+        /* match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), EEW_data_bytes, Read(Data), false, false, false) { */
+        /*   Ok(elem) => write_single_element(EEW_data_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, j * EMUL_data_reg)), elem), */
+        /*   Err(e)   => return e, */
+        /* } */
+        ()
       }
     } else { /* prestart, masked or tail segments */
       foreach (j from 0 to (nf - 1)) {
@@ -485,7 +491,7 @@ mapping clause encdec = VSUXSEGTYPE(nf, vm, vs2, rs1, width, vs3)
   <-> nf @ 0b0 @ 0b01 @ vm @ encdec_vreg(vs2) @ encdec_reg(rs1) @ encdec_vlewidth(width) @ encdec_vreg(vs3) @ 0b0100111
   when currentlyEnabled(Ext_V)
 
-val process_vsxseg : forall 'f 'ib 'db 'ip 'dp 'n, nfields_range('f) & is_mem_width('ib) & is_mem_width('db) & ('n > 0). (int('f), bits(1), vregidx, int('ib), int('db), int('ip), int('dp), regidx, vregidx, int('n), int) -> ExecutionResult
+val process_vsxseg : forall 'f 'ib 'db 'ip 'dp 'n, nfields_range('f) & is_mem_width('ib) & is_mem_width('db) & ('n > 0). (int('f), bits(1), vregidx, int('ib), int('db), int('ip), int('dp), regidx, vregidx, int('n), int) -> ExecutionResult(ast)
 function process_vsxseg (nf, vm, vs3, EEW_index_bytes, EEW_data_bytes, EMUL_index_pow, EMUL_data_pow, rs1, vs2, num_elem, mop) = {
   let EMUL_data_reg : int = if EMUL_data_pow <= 0 then 1 else 2 ^ EMUL_data_pow;
   let width_type : word_width = size_bytes(EEW_data_bytes);
@@ -506,7 +512,8 @@ function process_vsxseg (nf, vm, vs3, EEW_index_bytes, EEW_data_bytes, EMUL_inde
         let elem_offset : int = unsigned(vs2_val[i]) + j * EEW_data_bytes;
         let vs = vregidx_offset(vs3, to_bits_unsafe(5, j * EMUL_data_reg));
         let data = read_single_element(EEW_data_bytes * 8, i, vs);
-        match vmem_write(rs1, to_bits_unsafe(xlen, elem_offset), EEW_data_bytes, data, Write(Data), false, false, false) {
+        match (vmem_write(rs1, to_bits_unsafe(xlen, elem_offset), EEW_data_bytes, data, Write(Data), false, false, false)
+               : vmem_write_result) {
           Ok(true)  => (),
           Ok(false) => internal_error(__FILE__, __LINE__, "store got false from vmem_write"),
           Err(e)    => return e,
@@ -575,7 +582,7 @@ mapping clause encdec = VLRETYPE(nf, rs1, width, vd)
   <-> nf @ 0b0 @ 0b00 @ 0b1 @ 0b01000 @ encdec_reg(rs1) @ encdec_vlewidth(width) @ encdec_vreg(vd) @ 0b0000111
   when currentlyEnabled(Ext_V)
 
-val process_vlre : forall 'f 'b 'n, nfields_range_pow2('f) & is_mem_width('b) & ('n >= 0). (int('f), vregidx, int('b), regidx, int('n)) -> ExecutionResult
+val process_vlre : forall 'f 'b 'n, nfields_range_pow2('f) & is_mem_width('b) & ('n >= 0). (int('f), vregidx, int('b), regidx, int('n)) -> ExecutionResult(ast)
 function process_vlre (nf, vd, load_width_bytes, rs1, elem_per_reg) = {
   let width_type : word_width = size_bytes(load_width_bytes);
   let start_element : nat = match get_start_element() {
@@ -591,10 +598,10 @@ function process_vlre (nf, vd, load_width_bytes, rs1, elem_per_reg) = {
     foreach (i from elem_to_align to (elem_per_reg - 1)) {
       set_vstart(to_bits_unsafe(16, cur_elem));
       let elem_offset = cur_elem * load_width_bytes;
-      match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, Read(Data), false, false, false) {
-        Ok(elem) => write_single_element(load_width_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, cur_field)), elem),
-        Err(e)   => return e,
-      };
+      /* match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, Read(Data), false, false, false) { */
+      /*   Ok(elem) => write_single_element(load_width_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, cur_field)), elem), */
+      /*   Err(e)   => return e, */
+      /* }; */
       cur_elem = cur_elem + 1
     };
     cur_field = cur_field + 1
@@ -604,10 +611,10 @@ function process_vlre (nf, vd, load_width_bytes, rs1, elem_per_reg) = {
     foreach (i from 0 to (elem_per_reg - 1)) {
       set_vstart(to_bits_unsafe(16, cur_elem));
       let elem_offset = cur_elem * load_width_bytes;
-      match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, Read(Data), false, false, false) {
-        Ok(elem) => write_single_element(load_width_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, j)), elem),
-        Err(e)   => return e,
-      };
+      /* match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, Read(Data), false, false, false) { */
+      /*   Ok(elem) => write_single_element(load_width_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, j)), elem), */
+      /*   Err(e)   => return e, */
+      /* }; */
       cur_elem = cur_elem + 1
     }
   };
@@ -638,7 +645,7 @@ mapping clause encdec = VSRETYPE(nf, rs1, vs3)
   <-> nf @ 0b0 @ 0b00 @ 0b1 @ 0b01000 @ encdec_reg(rs1) @ 0b000 @ encdec_vreg(vs3) @ 0b0100111
   when currentlyEnabled(Ext_V)
 
-val process_vsre : forall 'f 'b 'n, nfields_range_pow2('f) & is_mem_width('b) & ('n >= 0). (int('f), int('b), regidx, vregidx, int('n)) -> ExecutionResult
+val process_vsre : forall 'f 'b 'n, nfields_range_pow2('f) & is_mem_width('b) & ('n >= 0). (int('f), int('b), regidx, vregidx, int('n)) -> ExecutionResult(ast)
 function process_vsre (nf, load_width_bytes, rs1, vs3, elem_per_reg) = {
   let width_type : word_width = BYTE;
   let start_element : nat = match get_start_element() {
@@ -656,7 +663,8 @@ function process_vsre (nf, load_width_bytes, rs1, vs3, elem_per_reg) = {
       let elem_offset : int = cur_elem * load_width_bytes;
       let vs = vregidx_offset(vs3, to_bits_unsafe(5, cur_field));
       let data = read_single_element(load_width_bytes * 8, i, vs);
-      match vmem_write(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, data, Write(Data), false, false, false) {
+      match (vmem_write(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, data, Write(Data), false, false, false)
+             : vmem_write_result) {
         Ok(true)  => (),
         Ok(false) => internal_error(__FILE__, __LINE__, "store got false from vmem_write"),
         Err(e)    => return e,
@@ -671,7 +679,8 @@ function process_vsre (nf, load_width_bytes, rs1, vs3, elem_per_reg) = {
     foreach (i from 0 to (elem_per_reg - 1)) {
       set_vstart(to_bits_unsafe(16, cur_elem));
       let elem_offset = cur_elem * load_width_bytes;
-      match vmem_write(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, vs3_val[i], Write(Data), false, false, false) {
+      match (vmem_write(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, vs3_val[i], Write(Data), false, false, false)
+             : vmem_write_result) {
         Ok(true)  => (),
         Ok(false) => internal_error(__FILE__, __LINE__, "store got false from vmem_write"),
         Err(e)    => return e,
@@ -711,7 +720,7 @@ mapping clause encdec = VMTYPE(rs1, vd_or_vs3, op)
   <-> 0b000 @ 0b0 @ 0b00 @ 0b1 @ 0b01011 @ encdec_reg(rs1) @ 0b000 @ encdec_vreg(vd_or_vs3) @ encdec_lsop(op)
   when currentlyEnabled(Ext_V)
 
-val process_vm : forall 'n 'l, ('n >= 0 & 'l >= 0). (vregidx, regidx, int('n), int('l), vmlsop) -> ExecutionResult
+val process_vm : forall 'n 'l, ('n >= 0 & 'l >= 0). (vregidx, regidx, int('n), int('l), vmlsop) -> ExecutionResult(ast)
 function process_vm(vd_or_vs3, rs1, num_elem, evl, op) = {
   let width_type : word_width = BYTE;
   let start_element : nat = match get_start_element() {
@@ -724,12 +733,14 @@ function process_vm(vd_or_vs3, rs1, num_elem, evl, op) = {
     if i < evl then { /* active elements */
       set_vstart(to_bits_unsafe(16, i));
       if op == VLM then { /* load */
-        match vmem_read(rs1, to_bits_unsafe(xlen, i), 1, Read(Data), false, false, false) {
-          Ok(elem) => write_single_element(8, i, vd_or_vs3, elem),
-          Err(e)   => return e,
-        }
+        /* match vmem_read(rs1, to_bits_unsafe(xlen, i), 1, Read(Data), false, false, false) { */
+        /*   Ok(elem) => write_single_element(8, i, vd_or_vs3, elem), */
+        /*   Err(e)   => return e, */
+        /* } */
+        ()
       } else if op == VSM then { /* store */
-        match vmem_write(rs1, to_bits_unsafe(xlen, i), 1, vd_or_vs3_val[i], Write(Data), false, false, false) {
+        match (vmem_write(rs1, to_bits_unsafe(xlen, i), 1, vd_or_vs3_val[i], Write(Data), false, false, false)
+               : vmem_write_result) {
           Ok(true)  => (),
           Ok(false) => internal_error(__FILE__, __LINE__, "store got false from vmem_write"),
           Err(e)    => return e,

@@ -14,7 +14,7 @@
 scattered union ast
 
 /* returns whether an instruction was retired, used for computing minstret */
-val execute : ast -> ExecutionResult
+val execute : ast -> ExecutionResult(ast)
 scattered function execute
 
 val assembly : ast <-> string
@@ -34,3 +34,9 @@ scattered mapping encdec_compressed
  */
 union clause ast = ILLEGAL : word
 union clause ast = C_ILLEGAL : half
+
+// Concretize the return type of the functions in the vmem_utils API.
+type vmem_read_result  = {'width, is_mem_width('width). result(bits(8 * 'width), ExecutionResult(ast))}
+type vmem_write_result = result(bool, ExecutionResult(ast))
+
+let RETIRE_SUCCESS = (Retire_Success() : ExecutionResult(ast))

@@ -7,9 +7,15 @@
 /*=======================================================================================*/
 
 // Return value from `execute()` function.
-union ExecutionResult = {
+union ExecutionResult('a : Type) = {
   // Successfully retired.
   Retire_Success                 : unit,
+
+  // The instruction is a compressed instruction, and should be
+  // executed as an uncompressed instruction.
+  // The `ast` type is abstracted over to break a mutual recursion
+  // cycle.
+  ExecuteAs                      : 'a,
 
   // An instruction such as WFI, WRS.{STO,NTO}
   // entered a wait state, which may or may not
@@ -27,10 +33,3 @@ union ExecutionResult = {
   Ext_DataAddr_Check_Failure     : ext_data_addr_error,
   Ext_XRET_Priv_Failure          : unit,
 }
-
-// To ease the introduction of `ExecutionResult`, this global
-// definition is temporarily used instead of the previous
-// RETIRE_SUCCESS enum value so that we don't have to immediately
-// update all the places RETIRE_SUCCESS was used.
-
-let RETIRE_SUCCESS : ExecutionResult = Retire_Success()
