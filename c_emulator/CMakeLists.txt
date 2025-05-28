@@ -1,6 +1,7 @@
 set(EMULATOR_COMMON_SRCS
     riscv_callbacks.cpp
     riscv_callbacks.h
+    riscv_callbacks_if.h
     riscv_config.h
     riscv_platform.cpp
     riscv_platform.h
@@ -16,7 +17,17 @@ set(EMULATOR_COMMON_SRCS
     riscv_softfloat.h
     config_utils.h
     config_utils.cpp
+    sim_utils.h
+    sim_utils.cpp
+    cosimulator.h
+    cosimulator.cpp
 )
+if (USE_SPIKE)
+  list(APPEND EMULATOR_COMMON_SRCS
+    spike.h
+    spike.cpp
+  )
+endif()
 
 add_executable(sail_riscv_sim
     "${CMAKE_BINARY_DIR}/sail_riscv_model.c"
@@ -42,7 +53,7 @@ set_source_files_properties(
 add_dependencies(sail_riscv_sim generated_sail_riscv_model)
 
 target_link_libraries(sail_riscv_sim
-    PRIVATE softfloat sail_runtime default_config
+    PRIVATE softfloat $<$<BOOL:${USE_SPIKE}>:spike> sail_runtime default_config
 )
 
 target_include_directories(sail_riscv_sim
