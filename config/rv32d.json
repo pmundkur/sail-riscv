@@ -7,7 +7,7 @@
       "len": 32,
       "value": "0xFFFF_FFFF"
     },
-    "mtval_has_illegal_instruction_bits": false
+    "mtval_has_illegal_instruction_bits": true
   },
   "memory": {
     "pmp": {
@@ -15,7 +15,8 @@
       "count": 16,
       "tor_supported": true,
       "na4_supported": true,
-      "napot_supported": true
+      "napot_supported": true,
+      "max_address_bit": 61
     },
     "misaligned": {
       "supported": true,
@@ -29,7 +30,7 @@
   },
   "platform": {
     "vendorid": 0,
-    "archid": 0,
+    "archid": 5,
     "impid": 0,
     "hartid": 0,
     "reset_vector": 4096,

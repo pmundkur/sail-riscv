@@ -15,6 +15,14 @@ let sys_pmp_count : {0, 16, 64} = config memory.pmp.count
    G=0 -> 4 bytes, G=10 -> 4096 bytes. */
 let sys_pmp_grain : range(0, 63) = config memory.pmp.grain
 
+/* The PMP address registers need to support the address range of the
+   platform.  For a 56-bit physical address space (on RV64), these
+   registers need only store bits [2,55].  However, for larger N-bit
+   address spaces, these registers need to store [2,N-1] bits.
+   The max_address_bit parameter specifies this N-1.
+*/
+let sys_pmp_max_addr_bit : range(2, 63) = config memory.pmp.max_address_bit
+
 /* PMP configuration entries */
 
 enum PmpAddrMatchType = {OFF, TOR, NA4, NAPOT}
@@ -141,7 +149,7 @@ function pmpWriteCfgReg(n : range(0, 15), v : xlenbits) -> unit = {
 function pmpWriteAddr(locked: bool, tor_locked: bool, reg: xlenbits, v: xlenbits) -> xlenbits =
   if   xlen == 32
   then { if (locked | tor_locked) then reg else v }
-  else { if (locked | tor_locked) then reg else zero_extend(v[53..0]) }
+  else { if (locked | tor_locked) then reg else zero_extend(v[sys_pmp_max_addr_bit..0]) }
 
 function pmpWriteAddrReg(n : range(0, 63), v : xlenbits) -> unit = {
   pmpaddr_n[n] = pmpWriteAddr(

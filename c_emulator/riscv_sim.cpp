@@ -69,7 +69,7 @@ bool config_print_rvfi = false;
 bool config_print_step = false;
 bool config_enable_rvfi = false;
 
-Cosim_type cosim_type = Cosim_type::NOP;
+Cosim_type cosim_type = Cosim_type::SPIKE;
 
 void set_config_print(char *var, bool val)
 {
