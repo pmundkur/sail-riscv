@@ -452,6 +452,7 @@ void reinit_sail(uint64_t elf_entry, const char *config_file)
   model_fini();
   sail_set_abstract_xlen();
   sail_set_abstract_ext_d_supported();
+  sail_set_abstract_num_triggers();
   model_init();
   init_sail(elf_entry, config_file);
 }
@@ -678,6 +679,7 @@ int main(int argc, char **argv)
 
   sail_set_abstract_xlen();
   sail_set_abstract_ext_d_supported();
+  sail_set_abstract_num_triggers();
   model_init();
 
   if (do_validate_config) {

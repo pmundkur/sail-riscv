@@ -260,6 +260,10 @@
     },
     "Sv57": {
       "supported": false
+    },
+    "Sdtrig": {
+      "supported": true,
+      "num_triggers": 6
     }
   }
 }

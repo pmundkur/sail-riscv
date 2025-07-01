@@ -331,6 +331,11 @@ enum clause extension = Ext_Smcntrpmf
 mapping clause extensionName = Ext_Smcntrpmf <-> "smcntrpmf"
 function clause hartSupports(Ext_Smcntrpmf) = config extensions.Smcntrpmf.supported
 
+// Triggers
+enum clause extension = Ext_Sdtrig
+mapping clause extensionName = Ext_Sdtrig <-> "Sdtrig"
+function clause hartSupports(Ext_Sdtrig) = config extensions.Sdtrig.supported
+
 let extensions_ordered_for_isa_string = [
   // Single letter extensions.
   Ext_M,

@@ -158,6 +158,8 @@ foreach (variant IN ITEMS "" "smt" "rocq" "rmem" "lean" "lem" "isabelle")
         ${sail_check_srcs}
         "riscv_vreg_type.sail"
         "riscv_vext_regs.sail"
+        "riscv_sdtrig_types.sail"
+        "riscv_sdtrig_regs.sail"
     )
 
     set(sail_arch_srcs

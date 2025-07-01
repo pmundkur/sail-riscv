@@ -109,10 +109,27 @@ function check_pmp() -> bool = {
   valid
 }
 
+function check_sdtrig() -> bool = {
+  var valid : bool = true;
+  if (config extensions.Sdtrig.supported : bool) then {
+    // The number of triggers is constrained to fit in `tselect`, but for
+    // practical reasons is constrained to be much smaller.
+    let max_triggers : nat = 16; // should match constraint in `riscv_sdtrig_regs`.
+    let conf_triggers = sizeof(num_triggers);
+    if (max_triggers < conf_triggers) then {
+      valid = false;
+      print_endline(" " ^ dec_str(conf_triggers) ^ " exceeds the maximum number ("
+                    ^ dec_str(max_triggers) ^ ") of supported triggers.");
+    }
+  };
+  valid
+}
+
 function config_is_valid() -> bool = {
     check_privs()
   & check_mmu_config()
   & check_mem_layout()
   & check_vlen_elen()
   & check_pmp()
+  & check_sdtrig()
 }
