@@ -9,7 +9,7 @@
 // When the symbolic execution is running a litmus test, it sets a
 // different entry point for each thread in the compiled litmus test.
 
-val get_entry_point : unit -> xlenbits
+val get_entry_point : unit -> mxlenbits
 
 $ifdef SYMBOLIC
 

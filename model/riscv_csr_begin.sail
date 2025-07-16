@@ -21,10 +21,10 @@ val is_CSR_defined : (csreg) -> bool
 scattered function is_CSR_defined
 
 // returns the value of the CSR if it is defined
-val read_CSR : csreg -> xlenbits
+val read_CSR : csreg -> mxlenbits
 scattered function read_CSR
 
 // returns new value (after legalisation) if the CSR is defined,
 // otherwise a unit value indicating an illegal instruction.
-val write_CSR : (csreg, xlenbits) -> result(xlenbits, unit)
+val write_CSR : (csreg, mxlenbits) -> result(mxlenbits, unit)
 scattered function write_CSR

@@ -58,7 +58,7 @@ function handle_illegal_vtype() = {
 
 let vl_use_ceil : bool = config extensions.V.vl_use_ceil
 
-function calculate_new_vl(AVL : int, VLMAX : int) -> xlenbits = {
+function calculate_new_vl(AVL : int, VLMAX : int) -> mxlenbits = {
   // See "Constraints on Setting vl" in the vector spec.
   let new_vl =
     if AVL <= VLMAX then AVL

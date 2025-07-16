@@ -16,35 +16,35 @@ function mem_read_callback(_) = ()
 val mem_exception_callback = pure {c: "mem_exception_callback"} : forall 'n, 0 <= 'n < mxlen . (/* addr */ physaddrbits, /* num_of_ExceptionType */ int('n)) -> unit
 function mem_exception_callback(_) = ()
 
-val pc_write_callback = pure {c: "pc_write_callback"} : xlenbits -> unit
+val pc_write_callback = pure {c: "pc_write_callback"} : mxlenbits -> unit
 function pc_write_callback(_) = ()
 
-val xreg_full_write_callback = pure {c: "xreg_full_write_callback"} : (string, regidx, xlenbits) -> unit
+val xreg_full_write_callback = pure {c: "xreg_full_write_callback"} : (string, regidx, mxlenbits) -> unit
 function xreg_full_write_callback(_) = ()
 
-val csr_full_write_callback = pure {c: "csr_full_write_callback"} : (string, csreg, xlenbits) -> unit
+val csr_full_write_callback = pure {c: "csr_full_write_callback"} : (string, csreg, mxlenbits) -> unit
 function csr_full_write_callback(_) = ()
 
-val csr_full_read_callback = pure {c: "csr_full_read_callback"} : (string, csreg, xlenbits) -> unit
+val csr_full_read_callback = pure {c: "csr_full_read_callback"} : (string, csreg, mxlenbits) -> unit
 function csr_full_read_callback(_) = ()
 
 val trap_callback = pure {c: "trap_callback"} : unit -> unit
 function trap_callback(_) = ()
 
 // Overloads for easier use of callbacks
-function csr_name_write_callback(name : string, value : xlenbits) -> unit = {
+function csr_name_write_callback(name : string, value : mxlenbits) -> unit = {
   let csr = csr_name_map(name);
   csr_full_write_callback(name, csr, value);
 }
-function csr_id_write_callback(csr : csreg, value : xlenbits) -> unit = {
+function csr_id_write_callback(csr : csreg, value : mxlenbits) -> unit = {
   let name = csr_name_map(csr);
   csr_full_write_callback(name, csr, value);
 }
-function csr_name_read_callback(name : string, value : xlenbits) -> unit = {
+function csr_name_read_callback(name : string, value : mxlenbits) -> unit = {
   let csr = csr_name_map(name);
   csr_full_read_callback(name, csr, value);
 }
-function csr_id_read_callback(csr : csreg, value : xlenbits) -> unit = {
+function csr_id_read_callback(csr : csreg, value : mxlenbits) -> unit = {
   let name = csr_name_map(csr);
   csr_full_read_callback(name, csr, value);
 }

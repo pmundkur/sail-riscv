@@ -292,7 +292,7 @@ function clause execute(LOAD_FP(imm, rs1, rd, width)) = {
   // This is checked during decoding.
   assert(width <= flen_bytes);
 
-  let offset : xlenbits = sign_extend(imm);
+  let offset : mxlenbits = sign_extend(imm);
   match vmem_read(rs1, offset, width, Read(Data), false, false, false) {
     Ok(result) => { F(rd) = nan_box(result); RETIRE_SUCCESS },
     Err(e)     => e,
@@ -327,7 +327,7 @@ function clause execute (STORE_FP(imm, rs2, rs1, width)) = {
   // This is checked during decoding.
   assert(width <= flen_bytes);
 
-  let offset : xlenbits = sign_extend(imm);
+  let offset : mxlenbits = sign_extend(imm);
   let data = F(rs2)[width * 8 - 1 ..  0];
   match vmem_write(rs1, offset, width, data, Write(Data), false, false, false) {
     Ok(true)  => RETIRE_SUCCESS,

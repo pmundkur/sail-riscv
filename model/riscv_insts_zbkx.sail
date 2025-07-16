@@ -21,7 +21,7 @@ mapping clause assembly = XPERM8(rs2, rs1, rd)
 function clause execute (XPERM8(rs2, rs1, rd)) = {
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
-  var result : xlenbits = zeros();
+  var result : mxlenbits = zeros();
   foreach (i from 0 to (mxlen - 8) by 8) {
     let index = unsigned(rs2_val[i+7..i]);
     result[i+7..i] = if 8*index < mxlen
@@ -45,7 +45,7 @@ mapping clause assembly = XPERM4(rs2, rs1, rd)
 function clause execute (XPERM4(rs2, rs1, rd)) = {
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
-  var result : xlenbits = zeros();
+  var result : mxlenbits = zeros();
   foreach (i from 0 to (mxlen - 4) by 4) {
     let index = unsigned(rs2_val[i+3..i]);
     result[i+3..i] = if 4*index < mxlen

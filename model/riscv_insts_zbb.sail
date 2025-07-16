@@ -127,7 +127,7 @@ mapping clause assembly = ZBB_RTYPE(rs2, rs1, rd, op)
 function clause execute (ZBB_RTYPE(rs2, rs1, rd, op)) = {
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
-  let result : xlenbits = match op {
+  let result : mxlenbits = match op {
     ANDN => rs1_val & ~(rs2_val),
     ORN  => rs1_val | ~(rs2_val),
     XNOR => ~(rs1_val ^ rs2_val),
@@ -172,7 +172,7 @@ mapping clause assembly = ZBB_EXTOP(rs1, rd, op)
 
 function clause execute (ZBB_EXTOP(rs1, rd, op)) = {
   let rs1_val = X(rs1);
-  let result : xlenbits = match op {
+  let result : mxlenbits = match op {
     SEXTB => sign_extend(rs1_val[7..0]),
     SEXTH => sign_extend(rs1_val[15..0]),
     ZEXTH => zero_extend(rs1_val[15..0]),
@@ -212,7 +212,7 @@ mapping clause assembly = ORCB(rs1, rd)
 
 function clause execute (ORCB(rs1, rd)) = {
   let rs1_val = X(rs1);
-  var result : xlenbits = zeros();
+  var result : mxlenbits = zeros();
   foreach (i from 0 to (mxlen - 8) by 8)
     result[(i + 7) .. i] = if rs1_val[(i + 7) .. i] == zeros()
                            then 0x00

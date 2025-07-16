@@ -30,7 +30,7 @@ mapping opst_code : seed_opst <-> bits(2) = {
  * called once we know the CSR is being written, and all other access control
  * checks have been done.
  */
-function read_seed_csr() -> xlenbits = {
+function read_seed_csr() -> mxlenbits = {
   let reserved_bits : bits(6) = 0b000000;
   let custom_bits : bits(8) = 0x00;
   let seed : bits(16) = get_16_random_bits();
@@ -38,7 +38,7 @@ function read_seed_csr() -> xlenbits = {
 }
 
 /* Writes to the seed CSR are ignored */
-function write_seed_csr () -> xlenbits = zeros()
+function write_seed_csr () -> mxlenbits = zeros()
 
 /* CSR mapping */
 mapping clause csr_name_map = 0x015  <-> "seed"

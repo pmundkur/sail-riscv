@@ -24,7 +24,7 @@ mapping clause encdec = UTYPE(imm, rd, op)
   <-> imm @ encdec_reg(rd) @ encdec_uop(op)
 
 function clause execute (UTYPE(imm, rd, op)) = {
-  let off : xlenbits = sign_extend(imm @ 0x000);
+  let off : mxlenbits = sign_extend(imm @ 0x000);
   X(rd) = match op {
     LUI   => off,
     AUIPC => get_arch_pc() + off
@@ -163,7 +163,7 @@ mapping clause encdec = ITYPE(imm, rs1, rd, op)
   <-> imm @ encdec_reg(rs1) @ encdec_iop(op) @ encdec_reg(rd) @ 0b0010011
 
 function clause execute (ITYPE (imm, rs1, rd, op)) = {
-  let immext : xlenbits = sign_extend(imm);
+  let immext : mxlenbits = sign_extend(imm);
   X(rd) = match op {
     ADDI  => X(rs1) + immext,
     SLTI  => zero_extend(bool_to_bits(X(rs1) <_s immext)),
@@ -279,7 +279,7 @@ union clause instruction = LOAD : (bits(12), regidx, regidx, bool, word_width)
 function valid_load_encdec(width : word_width, is_unsigned : bool) -> bool =
   (width < mxlen_bytes) | (not(is_unsigned) & width <= mxlen_bytes)
 
-val extend_value : forall 'n, 0 < 'n <= mxlen. (bool, bits('n)) -> xlenbits
+val extend_value : forall 'n, 0 < 'n <= mxlen. (bool, bits('n)) -> mxlenbits
 function extend_value(is_unsigned, value) = if is_unsigned then zero_extend(value) else sign_extend(value)
 
 mapping clause encdec = LOAD(imm, rs1, rd, is_unsigned, width)
@@ -287,7 +287,7 @@ mapping clause encdec = LOAD(imm, rs1, rd, is_unsigned, width)
   when valid_load_encdec(width, is_unsigned)
 
 function clause execute (LOAD(imm, rs1, rd, is_unsigned, width)) = {
-  let offset : xlenbits = sign_extend(imm);
+  let offset : mxlenbits = sign_extend(imm);
 
   // This is checked during decoding.
   assert(width <= mxlen_bytes);
@@ -317,7 +317,7 @@ mapping clause encdec = STORE(imm7 @ imm5, rs2, rs1, width)
   when width <= mxlen_bytes
 
 function clause execute (STORE(imm, rs2, rs1, width)) = {
-  let offset : xlenbits = sign_extend(imm);
+  let offset : mxlenbits = sign_extend(imm);
 
   // This is checked during decoding.
   assert(width <= mxlen_bytes);
@@ -525,7 +525,7 @@ function clause execute ECALL() = {
                       Supervisor => E_S_EnvCall(),
                       Machine    => E_M_EnvCall()
                     },
-             excinfo = (None() : option(xlenbits)),
+             excinfo = (None() : option(mxlenbits)),
              ext     = None() };
   Trap(cur_privilege, CTL_TRAP(t), PC)
 }

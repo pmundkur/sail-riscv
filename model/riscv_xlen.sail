@@ -33,5 +33,5 @@ let mxlen_bytes = sizeof(mxlen_bytes)
 let mxlen = sizeof(mxlen)
 let asidlen = sizeof(asidlen)
 
-type xlenbits = bits(mxlen)
+type mxlenbits = bits(mxlen)
 type asidbits = bits(asidlen)

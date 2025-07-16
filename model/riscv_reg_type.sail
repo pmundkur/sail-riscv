@@ -7,7 +7,7 @@
 /*=======================================================================================*/
 
 /* default register type */
-type regtype = xlenbits
+type regtype = mxlenbits
 
 /* default zero register */
 let zero_reg : regtype = zeros()
@@ -18,8 +18,8 @@ function RegStr(r) = BitStr(r)
 
 /* conversions */
 
-val regval_from_reg : regtype -> xlenbits
+val regval_from_reg : regtype -> mxlenbits
 function regval_from_reg(r) = r
 
-val regval_into_reg : xlenbits -> regtype
+val regval_into_reg : mxlenbits -> regtype
 function regval_into_reg(v) = v

@@ -160,7 +160,7 @@ function pt_walk(
 // Architectural SATP CSR
 
 // PUBLIC: see also riscv_insts_zicsr.sail and other CSR-related files
-register satp : xlenbits
+register satp : mxlenbits
 mapping clause csr_name_map = 0x180  <-> "satp"
 function clause is_CSR_defined(0x180) = currentlyEnabled(Ext_S)
 function clause read_CSR(0x180) = satp
@@ -340,7 +340,7 @@ function translate forall 'v, is_sv_mode('v) . (
   }
 }
 
-// SATP is represented in the model as an MXLEN register (xlenbits), but it's
+// SATP is represented in the model as an MXLEN register (mxlenbits), but it's
 // actually SXLEN. That means if we are using Sv39 (which is only available when
 // SXLEN is 32), then it must be a 32 bit register.
 function get_satp forall 'v, is_sv_mode('v). (

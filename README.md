@@ -156,7 +156,7 @@ mapping clause encdec = ITYPE(imm, rs1, rd, op) <-> imm @ rs1 @ encdec_iop(op) @
 /* the execution semantics for the ITYPE instructions */
 
 function clause execute (ITYPE (imm, rs1, rd, op)) = {
-  let immext : xlenbits = sign_extend(imm);
+  let immext : mxlenbits = sign_extend(imm);
   X(rd) = match op {
     ADDI  => X(rs1) + immext,
     SLTI  => zero_extend(bool_to_bits(X(rs1) <_s immext)),

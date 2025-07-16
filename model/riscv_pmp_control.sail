@@ -40,10 +40,10 @@ function pmpRangeMatch(
 
 function pmpMatchAddr(
   Physaddr(addr) : physaddr,
-  width : xlenbits,
+  width : mxlenbits,
   ent : Pmpcfg_ent,
-  pmpaddr : xlenbits,
-  prev_pmpaddr : xlenbits,
+  pmpaddr : mxlenbits,
+  prev_pmpaddr : mxlenbits,
 ) -> pmpAddrMatch = {
   let addr = unsigned(addr);
   let width = unsigned(width);
@@ -96,7 +96,7 @@ function pmpCheck forall 'n, 0 < 'n <= max_mem_access . (
   priv : Privilege,
 ) -> option(ExceptionType) = {
 
-  let width : xlenbits = to_bits(width);
+  let width : mxlenbits = to_bits(width);
 
   foreach (i from 0 to 63) {
     let prev_pmpaddr = if i > 0 then pmpReadAddrReg(i - 1) else zeros();

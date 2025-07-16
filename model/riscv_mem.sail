@@ -45,7 +45,7 @@ function is_aligned_paddr(Physaddr(addr) : physaddr, width : nat1) -> bool =
 function is_aligned_vaddr(Virtaddr(addr) : virtaddr, width : nat1) -> bool =
   unsigned(addr) % width == 0
 
-function is_aligned_bits(vaddr : xlenbits, width : word_width) -> bool =
+function is_aligned_bits(vaddr : mxlenbits, width : word_width) -> bool =
   match width {
     1 => true,
     2 => vaddr[0..0] == zeros(),

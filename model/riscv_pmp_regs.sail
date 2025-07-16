@@ -37,11 +37,11 @@ bitfield Pmpcfg_ent : bits(8) = {
 }
 
 register pmpcfg_n : vector(64, Pmpcfg_ent)
-register pmpaddr_n : vector(64, xlenbits)
+register pmpaddr_n : vector(64, mxlenbits)
 
 /* Packing and unpacking pmpcfg regs for mxlen-width accesses */
 
-function pmpReadCfgReg(n : range(0, 15)) -> xlenbits = {
+function pmpReadCfgReg(n : range(0, 15)) -> mxlenbits = {
   if mxlen == 32
   then {
     pmpcfg_n[n*4 + 3].bits @
@@ -62,7 +62,7 @@ function pmpReadCfgReg(n : range(0, 15)) -> xlenbits = {
   }
 }
 
-function pmpReadAddrReg(n : range(0, 63)) -> xlenbits = {
+function pmpReadAddrReg(n : range(0, 63)) -> mxlenbits = {
   let G = sys_pmp_grain;
   let match_type = pmpcfg_n[n][A];
   let addr = pmpaddr_n[n];
@@ -70,13 +70,13 @@ function pmpReadAddrReg(n : range(0, 63)) -> xlenbits = {
   match match_type[1] {
     bitone if G >= 2 => {
       // [G-2..0] read as all ones to form mask, therefore we need G-1 bits.
-      let mask : xlenbits = zero_extend(ones(min(G - 1, mxlen)));
+      let mask : mxlenbits = zero_extend(ones(min(G - 1, mxlen)));
       addr | mask
     },
 
     bitzero if G >= 1 => {
       // [G-1..0] read as all zeros to form mask, therefore we need G bits.
-      let mask : xlenbits = zero_extend(ones(min(G , mxlen)));
+      let mask : mxlenbits = zero_extend(ones(min(G , mxlen)));
       addr & ~(mask)
     },
 
@@ -121,7 +121,7 @@ function pmpWriteCfg(n: range(0, 63), cfg: Pmpcfg_ent, v: bits(8)) -> Pmpcfg_ent
     cfg
   }
 
-function pmpWriteCfgReg(n : range(0, 15), v : xlenbits) -> unit = {
+function pmpWriteCfgReg(n : range(0, 15), v : mxlenbits) -> unit = {
   if mxlen == 32
   then {
     foreach (i from 0 to 3) {
@@ -138,12 +138,12 @@ function pmpWriteCfgReg(n : range(0, 15), v : xlenbits) -> unit = {
   }
 }
 
-function pmpWriteAddr(locked: bool, tor_locked: bool, reg: xlenbits, v: xlenbits) -> xlenbits =
+function pmpWriteAddr(locked: bool, tor_locked: bool, reg: mxlenbits, v: mxlenbits) -> mxlenbits =
   if   mxlen == 32
   then { if (locked | tor_locked) then reg else v }
   else { if (locked | tor_locked) then reg else zero_extend(v[53..0]) }
 
-function pmpWriteAddrReg(n : range(0, 63), v : xlenbits) -> unit = {
+function pmpWriteAddrReg(n : range(0, 63), v : mxlenbits) -> unit = {
   pmpaddr_n[n] = pmpWriteAddr(
     pmpLocked(pmpcfg_n[n]),
     if n + 1 < 64 then pmpTORLocked(pmpcfg_n[n + 1]) else false,

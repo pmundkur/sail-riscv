@@ -10,6 +10,6 @@
 
 struct sync_exception = {
   trap    : ExceptionType,
-  excinfo : option(xlenbits),
+  excinfo : option(mxlenbits),
   ext     : option(ext_exception)   /* for extensions */
 }

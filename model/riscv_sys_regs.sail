@@ -14,7 +14,7 @@ register cur_privilege : Privilege
 
 /* current instruction bits, used for illegal instruction exceptions */
 
-register cur_inst : xlenbits
+register cur_inst : mxlenbits
 
 /* State projections
  *
@@ -46,7 +46,7 @@ register cur_inst : xlenbits
 
 /* M-mode registers */
 
-bitfield Misa : xlenbits = {
+bitfield Misa : mxlenbits = {
   MXL  : mxlen - 1 .. mxlen - 2,
 
   Z    : 25,
@@ -100,7 +100,7 @@ function clause currentlyEnabled(Ext_Sstc) = hartSupports(Ext_Sstc)
    unsetting C. If it returns true the write will have no effect. */
 val ext_veto_disable_C : unit -> bool
 
-function legalize_misa(m : Misa, v : xlenbits) -> Misa = {
+function legalize_misa(m : Misa, v : mxlenbits) -> Misa = {
   let v = Mk_Misa(v);
   /* Suppress updates to MISA if MISA is not writable or if by disabling C next PC would become misaligned or an extension vetoes */
   if   not(sys_enable_writable_misa) | (v[C] == 0b0 & (nextPC[1] == bitone | ext_veto_disable_C()))
@@ -370,7 +370,7 @@ bitfield MEnvcfg : bits(64) = {
   FIOM   : 0,
 }
 
-bitfield SEnvcfg : xlenbits = {
+bitfield SEnvcfg : mxlenbits = {
   // Cache Block Zero instruction Enable
   CBZE   : 7,
   // Cache Block Clean and Flush instruction Enable
@@ -395,7 +395,7 @@ function legalize_menvcfg(o : MEnvcfg, v : bits(64)) -> MEnvcfg = {
   ]
 }
 
-function legalize_senvcfg(o : SEnvcfg, v : xlenbits) -> SEnvcfg = {
+function legalize_senvcfg(o : SEnvcfg, v : mxlenbits) -> SEnvcfg = {
   let v = Mk_SEnvcfg(v);
   [o with
     FIOM = if sys_enable_writable_fiom then v[FIOM] else 0b0,
@@ -440,7 +440,7 @@ function is_fiom_active() -> bool = {
 
 /* interrupt processing state */
 
-bitfield Minterrupts : xlenbits = {
+bitfield Minterrupts : mxlenbits = {
   MEI : 11, /* external interrupts */
   SEI : 9,
 
@@ -451,7 +451,7 @@ bitfield Minterrupts : xlenbits = {
   SSI : 1,
 }
 
-function legalize_mip(o : Minterrupts, v : xlenbits) -> Minterrupts = {
+function legalize_mip(o : Minterrupts, v : mxlenbits) -> Minterrupts = {
   // The only writable bits are the S-mode bits.
   let v = Mk_Minterrupts(v);
   [o with
@@ -464,7 +464,7 @@ function legalize_mip(o : Minterrupts, v : xlenbits) -> Minterrupts = {
   ]
 }
 
-function legalize_mie(o : Minterrupts, v : xlenbits) -> Minterrupts = {
+function legalize_mie(o : Minterrupts, v : mxlenbits) -> Minterrupts = {
   let v = Mk_Minterrupts(v);
   [o with
     MEI = v[MEI],
@@ -476,7 +476,7 @@ function legalize_mie(o : Minterrupts, v : xlenbits) -> Minterrupts = {
   ]
 }
 
-function legalize_mideleg(o : Minterrupts, v : xlenbits) -> Minterrupts = {
+function legalize_mideleg(o : Minterrupts, v : mxlenbits) -> Minterrupts = {
   /* M-mode interrupt delegation bits "should" be hardwired to 0. */
   /* FIXME: needs verification against eventual spec language. */
   [Mk_Minterrupts(v) with MEI = 0b0, MTI = 0b0, MSI = 0b0]
@@ -538,13 +538,13 @@ function clause write_CSR(0x303, value) = { mideleg = legalize_mideleg(mideleg, 
 
 /* registers for trap handling */
 
-bitfield Mtvec : xlenbits = {
+bitfield Mtvec : mxlenbits = {
   Base : mxlen - 1 .. 2,
   Mode : 1 .. 0
 }
 register mtvec : Mtvec  /* Trap Vector */
 
-function legalize_tvec(o : Mtvec, v : xlenbits) -> Mtvec = {
+function legalize_tvec(o : Mtvec, v : mxlenbits) -> Mtvec = {
  let v = Mk_Mtvec(v);
  match (trapVectorMode_of_bits(v[Mode])) {
    TV_Direct => v,
@@ -553,7 +553,7 @@ function legalize_tvec(o : Mtvec, v : xlenbits) -> Mtvec = {
  }
 }
 
-bitfield Mcause : xlenbits = {
+bitfield Mcause : mxlenbits = {
   IsInterrupt : mxlen - 1,
   Cause       : mxlen - 2 .. 0
 }
@@ -564,8 +564,8 @@ function clause read_CSR(0x342) = mcause.bits
 function clause write_CSR(0x342, value) = { mcause.bits = value; Ok(mcause.bits) }
 
 /* Interpreting the trap-vector address */
-function tvec_addr(m : Mtvec, c : Mcause) -> option(xlenbits) = {
-  let base : xlenbits = m[Base] @ 0b00;
+function tvec_addr(m : Mtvec, c : Mcause) -> option(mxlenbits) = {
+  let base : mxlenbits = m[Base] @ 0b00;
   match (trapVectorMode_of_bits(m[Mode])) {
     TV_Direct => Some(base),
     TV_Vector => if   c[IsInterrupt] == 0b1
@@ -577,11 +577,11 @@ function tvec_addr(m : Mtvec, c : Mcause) -> option(xlenbits) = {
 
 /* Exception PC */
 
-register mepc : xlenbits
+register mepc : mxlenbits
 
 // The xepc legalization zeroes xepc[1:0] when Zca is not supported.
 // When Zca is supported (whether it is enabled or not), it zeroes only xepc[0].
-function legalize_xepc(v : xlenbits) -> xlenbits = {
+function legalize_xepc(v : mxlenbits) -> mxlenbits = {
   if   hartSupports(Ext_Zca)
   then [v with 0 = bitzero]
   else [v with 1..0 = zeros()]
@@ -589,7 +589,7 @@ function legalize_xepc(v : xlenbits) -> xlenbits = {
 
 // Align value to min supported PC alignment. This is used to
 // legalize xepc reads.
-function align_pc(addr : xlenbits) -> xlenbits = {
+function align_pc(addr : mxlenbits) -> mxlenbits = {
   if currentlyEnabled(Ext_Zca)
   then [addr with 0 = bitzero]
   else [addr with 1..0 = zeros()]
@@ -597,8 +597,8 @@ function align_pc(addr : xlenbits) -> xlenbits = {
 
 /* auxiliary exception registers */
 
-register mtval    : xlenbits
-register mscratch : xlenbits
+register mtval    : mxlenbits
+register mscratch : mxlenbits
 
 mapping clause csr_name_map = 0x343  <-> "mtval"
 mapping clause csr_name_map = 0x340  <-> "mscratch"
@@ -622,7 +622,7 @@ bitfield Counteren : bits(32) = {
 }
 
 // scounteren
-function legalize_scounteren(c : Counteren, v : xlenbits) -> Counteren = {
+function legalize_scounteren(c : Counteren, v : mxlenbits) -> Counteren = {
   let supported_counters = sys_writable_hpm_counters[31 .. 3] @ 0b111;
   Mk_Counteren(v[31 .. 0] & supported_counters)
 }
@@ -634,7 +634,7 @@ function clause read_CSR(0x106) = zero_extend(scounteren.bits)
 function clause write_CSR(0x106, value) = { scounteren = legalize_scounteren(scounteren, value); Ok(zero_extend(scounteren.bits)) }
 
 // mcounteren
-function legalize_mcounteren(c : Counteren, v : xlenbits) -> Counteren = {
+function legalize_mcounteren(c : Counteren, v : mxlenbits) -> Counteren = {
   let supported_counters = sys_writable_hpm_counters[31 .. 3] @ 0b111;
   Mk_Counteren(v[31 .. 0] & supported_counters)
 }
@@ -653,7 +653,7 @@ bitfield Counterin : bits(32) = {
   CY : 0
 }
 
-function legalize_mcountinhibit(c : Counterin, v : xlenbits) -> Counterin = {
+function legalize_mcountinhibit(c : Counterin, v : mxlenbits) -> Counterin = {
   // Note the 0 in 0b101 is because the mtimer counter can't be paused.
   let supported_counters = sys_writable_hpm_counters[31 .. 3] @ 0b101;
   Mk_Counterin(v[31 .. 0] & supported_counters)
@@ -686,11 +686,11 @@ register minstret_increment : bool
 
 /* machine information registers */
 register mvendorid : bits(32) = to_bits_checked(config platform.vendorid : int)
-register mimpid    : xlenbits = to_bits_checked(config platform.impid : int)
-register marchid   : xlenbits = to_bits_checked(config platform.archid : int)
-register mhartid   : xlenbits = to_bits_checked(config platform.hartid : int)
+register mimpid    : mxlenbits = to_bits_checked(config platform.impid : int)
+register marchid   : mxlenbits = to_bits_checked(config platform.archid : int)
+register mhartid   : mxlenbits = to_bits_checked(config platform.hartid : int)
 
-register mconfigptr : xlenbits = zeros()
+register mconfigptr : mxlenbits = zeros()
 
 mapping clause csr_name_map = 0xF11  <-> "mvendorid"
 mapping clause csr_name_map = 0xF12  <-> "marchid"
@@ -769,7 +769,7 @@ function lift_sstatus(m : Mstatus, s : Sstatus) -> Mstatus = {
   ]
 }
 
-function legalize_sstatus(m : Mstatus, v : xlenbits) -> Mstatus = {
+function legalize_sstatus(m : Mstatus, v : mxlenbits) -> Mstatus = {
   legalize_mstatus(m, lift_sstatus(m, Mk_Sstatus(zero_extend(v))).bits)
 }
 
@@ -779,7 +779,7 @@ function clause read_CSR(0x100) = lower_mstatus(mstatus).bits[mxlen - 1 .. 0]
 function clause write_CSR(0x100, value) = { mstatus = legalize_sstatus(mstatus, value); Ok(lower_mstatus(mstatus).bits[mxlen - 1 .. 0]) }
 
 
-bitfield Sinterrupts : xlenbits = {
+bitfield Sinterrupts : mxlenbits = {
   SEI : 9,  /* external interrupts */
 
   STI : 5,  /* timers interrupts */
@@ -817,7 +817,7 @@ function lift_sip(o : Minterrupts, d : Minterrupts, s : Sinterrupts) -> Minterru
   m
 }
 
-function legalize_sip(m : Minterrupts, d : Minterrupts, v : xlenbits) -> Minterrupts = {
+function legalize_sip(m : Minterrupts, d : Minterrupts, v : mxlenbits) -> Minterrupts = {
   lift_sip(m, d, Mk_Sinterrupts(v))
 }
 
@@ -838,7 +838,7 @@ function lift_sie(o : Minterrupts, d : Minterrupts, s : Sinterrupts) -> Minterru
   ]
 }
 
-function legalize_sie(m : Minterrupts, d : Minterrupts, v : xlenbits) -> Minterrupts = {
+function legalize_sie(m : Minterrupts, d : Minterrupts, v : mxlenbits) -> Minterrupts = {
   lift_sie(m, d, Mk_Sinterrupts(v))
 }
 
@@ -851,10 +851,10 @@ function clause write_CSR(0x104, value) = { mie = legalize_sie(mie, mideleg, val
 
 /* other non-VM related supervisor state */
 register stvec    : Mtvec
-register sscratch : xlenbits
-register sepc     : xlenbits
+register sscratch : mxlenbits
+register sepc     : mxlenbits
 register scause   : Mcause
-register stval    : xlenbits
+register stval    : mxlenbits
 
 mapping clause csr_name_map = 0x140  <-> "sscratch"
 mapping clause csr_name_map = 0x142  <-> "scause"
@@ -893,9 +893,9 @@ bitfield Satp32 : bits(32) = {
 // and does not legalize the asid field if asidlen is not the maximum.
 function legalize_satp(
   arch : Architecture,
-  prev_value : xlenbits,
-  written_value : xlenbits,
-) -> xlenbits = {
+  prev_value : mxlenbits,
+  written_value : mxlenbits,
+) -> mxlenbits = {
   if mxlen == 32 then {
     let s = Mk_Satp32(written_value);
     match satpMode_of_bits(arch, 0b000 @ s[Mode]) {
@@ -924,7 +924,7 @@ function legalize_satp(
 }
 
 /* disabled trigger/debug module */
-register tselect : xlenbits
+register tselect : mxlenbits
 
 mapping clause csr_name_map = 0x7a0  <-> "tselect"
 mapping clause csr_name_map = 0x7a1  <-> "tdata1"

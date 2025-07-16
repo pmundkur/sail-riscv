@@ -532,7 +532,7 @@ mapping clause assembly = FMVH_X_D(rs1, rd)
 
 function clause execute (FMVH_X_D(rs1, rd)) = {
   let rs1_val_D           = F_D(rs1)[63..32];
-  let rd_val_X : xlenbits = sign_extend(rs1_val_D);
+  let rd_val_X : mxlenbits = sign_extend(rs1_val_D);
   X(rd)                   = rd_val_X;
   RETIRE_SUCCESS
 }

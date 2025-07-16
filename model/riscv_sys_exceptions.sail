@@ -15,10 +15,10 @@ function ext_check_xret_priv (p : Privilege) : Privilege -> bool = true
 /* Called if above check fails */
 function ext_fail_xret_priv () : unit -> unit = ()
 
-function handle_trap_extension(p : Privilege, pc : xlenbits, u : option(unit)) -> unit = ()
+function handle_trap_extension(p : Privilege, pc : mxlenbits, u : option(unit)) -> unit = ()
 
 /* used for traps and ECALL */
-function prepare_trap_vector(p : Privilege, cause : Mcause) -> xlenbits = {
+function prepare_trap_vector(p : Privilege, cause : Mcause) -> mxlenbits = {
   let tvec : Mtvec = match p {
                        Machine    => mtvec,
                        Supervisor => stvec,
@@ -37,7 +37,7 @@ function prepare_trap_vector(p : Privilege, cause : Mcause) -> xlenbits = {
  * prepare_xret_target: used to get the value for control transfer to the xret target
  */
 
-val get_xepc : Privilege -> xlenbits
+val get_xepc : Privilege -> mxlenbits
 function get_xepc(p) =
   match p {
     Machine    => align_pc(mepc),
@@ -45,7 +45,7 @@ function get_xepc(p) =
     User       => internal_error(__FILE__, __LINE__, "Invalid privilege level"),
   }
 
-val set_xepc : (Privilege, xlenbits) -> xlenbits
+val set_xepc : (Privilege, mxlenbits) -> mxlenbits
 function set_xepc(p, value) = {
   let target = legalize_xepc(value);
   match p {
@@ -56,24 +56,24 @@ function set_xepc(p, value) = {
   target
 }
 
-val prepare_xret_target : (Privilege) -> xlenbits
+val prepare_xret_target : (Privilege) -> mxlenbits
 function prepare_xret_target(p) =
   get_xepc(p)
 
 /* other trap-related CSRs */
 
-function get_mtvec() -> xlenbits =
+function get_mtvec() -> mxlenbits =
   mtvec.bits
 
-function get_stvec() -> xlenbits =
+function get_stvec() -> mxlenbits =
   stvec.bits
 
-function set_mtvec(value : xlenbits) -> xlenbits = {
+function set_mtvec(value : mxlenbits) -> mxlenbits = {
   mtvec = legalize_tvec(mtvec, value);
   mtvec.bits
 }
 
-function set_stvec(value : xlenbits) -> xlenbits = {
+function set_stvec(value : mxlenbits) -> mxlenbits = {
   stvec = legalize_tvec(stvec, value);
   stvec.bits
 }

@@ -70,7 +70,7 @@ function prop_access_within_single(addr : bits(32)) -> bool = {
   access_within(addr, 1, 0)
 }
 
-val allowed_misaligned : forall 'width, 'width > 0. (xlenbits, int('width)) -> bool
+val allowed_misaligned : forall 'width, 'width > 0. (mxlenbits, int('width)) -> bool
 
 function allowed_misaligned(vaddr, width) = {
   let region_width_exp = sys_misaligned_allowed_within_exp;
@@ -174,7 +174,7 @@ function check_misaligned(vaddr : virtaddr, width : word_width) -> bool = {
 }
 
 val vmem_read : forall 'width, is_mem_width('width).
-  (regidx, xlenbits, int('width), AccessType(ext_access_type), bool, bool, bool)
+  (regidx, mxlenbits, int('width), AccessType(ext_access_type), bool, bool, bool)
   -> result(bits(8 * 'width), ExecutionResult)
 
 function vmem_read(rs, offset, width, acc, aq, rl, res) = {
@@ -239,7 +239,7 @@ function vmem_read(rs, offset, width, acc, aq, rl, res) = {
 }
 
 val vmem_write : forall 'width, is_mem_width('width).
-  (regidx, xlenbits, int('width), bits(8 * 'width), AccessType(ext_access_type), bool, bool, bool)
+  (regidx, mxlenbits, int('width), bits(8 * 'width), AccessType(ext_access_type), bool, bool, bool)
   -> result(bool, ExecutionResult)
 
 function vmem_write(rs_addr, offset, width, data, acc, aq, rl, res) = {

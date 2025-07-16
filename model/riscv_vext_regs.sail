@@ -226,13 +226,13 @@ function init_vregs () = {
 
 /* vector csrs */
 
-register vstart : xlenbits
-register vl     : xlenbits
+register vstart : mxlenbits
+register vl     : mxlenbits
 
-let VLENB : xlenbits =
+let VLENB : mxlenbits =
   to_bits(2 ^ VLEN_pow / 8)
 
-bitfield Vtype  : xlenbits = {
+bitfield Vtype  : mxlenbits = {
   vill      : mxlen - 1,
   reserved  : mxlen - 2 .. 8,
   vma       : 7,

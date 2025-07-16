@@ -14,13 +14,13 @@
   The value in the PC register is the absolute virtual address of the instruction
   to fetch.
  */
-val get_arch_pc : unit -> xlenbits
+val get_arch_pc : unit -> mxlenbits
 function get_arch_pc() = PC
 
-val get_next_pc : unit -> xlenbits
+val get_next_pc : unit -> mxlenbits
 function get_next_pc() = nextPC
 
-val set_next_pc : xlenbits -> unit
+val set_next_pc : mxlenbits -> unit
 function set_next_pc(pc) = {
   sail_branch_announce(mxlen, pc);
   nextPC = pc

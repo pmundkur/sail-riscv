@@ -841,8 +841,8 @@ function clause execute (F_UN_X_TYPE_H(rs1, rd, FCLASS_H)) = {
 }
 
 function clause execute (F_UN_X_TYPE_H(rs1, rd, FMV_X_H)) = {
-  let rs1_val_H            = F(rs1)[15..0];
-  let rd_val_X  : xlenbits = sign_extend(rs1_val_H);
+  let rs1_val_H             = F(rs1)[15..0];
+  let rd_val_X  : mxlenbits = sign_extend(rs1_val_H);
   X(rd) = rd_val_X;
   RETIRE_SUCCESS
 }

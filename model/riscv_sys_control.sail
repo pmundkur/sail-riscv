@@ -100,7 +100,7 @@ function exception_delegatee(e : ExceptionType, p : Privilege) -> Privilege = {
 /* Interrupts are prioritized in privilege order, and for each
  * privilege, in the order: external, software, timers.
  */
-function findPendingInterrupt(ip : xlenbits) -> option(InterruptType) = {
+function findPendingInterrupt(ip : mxlenbits) -> option(InterruptType) = {
   let ip = Mk_Minterrupts(ip);
   if      ip[MEI] == 0b1 then Some(I_M_External)
   else if ip[MSI] == 0b1 then Some(I_M_Software)
@@ -119,7 +119,7 @@ function findPendingInterrupt(ip : xlenbits) -> option(InterruptType) = {
  *
  * This is used when the hart is in the Active state.
  */
-function getPendingSet(priv : Privilege) -> option((xlenbits, Privilege)) = {
+function getPendingSet(priv : Privilege) -> option((mxlenbits, Privilege)) = {
   // mideleg can only be non-zero if we support Supervisor mode.
   assert(currentlyEnabled(Ext_S) | mideleg.bits == zeros());
 
@@ -181,7 +181,7 @@ union ctl_result = {
 
 /* trap value */
 
-function tval(excinfo : option(xlenbits)) -> xlenbits = {
+function tval(excinfo : option(mxlenbits)) -> mxlenbits = {
   match (excinfo) {
     Some(e) => e,
     None()  => zeros()
@@ -206,8 +206,8 @@ function track_trap(p : Privilege) -> unit = {
 }
 
 /* handle exceptional ctl flow by updating nextPC and operating privilege */
-function trap_handler(del_priv : Privilege, intr : bool, c : exc_code, pc : xlenbits, info : option(xlenbits), ext : option(ext_exception))
-                     -> xlenbits = {
+function trap_handler(del_priv : Privilege, intr : bool, c : exc_code, pc : mxlenbits, info : option(mxlenbits), ext : option(ext_exception))
+                     -> mxlenbits = {
   trap_callback();
   if   get_config_print_platform()
   then print_platform("handling " ^ (if intr then "int#" else "exc#")
@@ -262,7 +262,7 @@ function trap_handler(del_priv : Privilege, intr : bool, c : exc_code, pc : xlen
 }
 
 function exception_handler(cur_priv : Privilege, ctl : ctl_result,
-                           pc: xlenbits) -> xlenbits = {
+                           pc: mxlenbits) -> mxlenbits = {
   match (cur_priv, ctl) {
     (_, CTL_TRAP(e)) => {
       let del_priv = exception_delegatee(e.trap, cur_priv);

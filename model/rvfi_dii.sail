@@ -220,7 +220,7 @@ function print_rvfi_exec () = {
 }
 
 /* RVFI records */
-val rvfi_write : forall 'n, 0 < 'n <= max_mem_access . (xlenbits, int('n), bits(8 * 'n)) -> unit
+val rvfi_write : forall 'n, 0 < 'n <= max_mem_access . (mxlenbits, int('n), bits(8 * 'n)) -> unit
 function rvfi_write (paddr, width, value) = {
   rvfi_mem_data[rvfi_mem_addr] = zero_extend(paddr);
   rvfi_mem_data_present = true;
@@ -233,7 +233,7 @@ function rvfi_write (paddr, width, value) = {
   };
 }
 
-val rvfi_read : forall 'n, 'n > 0. (xlenbits, int('n), bits(8 * 'n)) -> unit
+val rvfi_read : forall 'n, 'n > 0. (mxlenbits, int('n), bits(8 * 'n)) -> unit
 function rvfi_read (paddr, width, value) = {
   rvfi_mem_data[rvfi_mem_addr] = zero_extend(paddr);
   rvfi_mem_data_present = true;
@@ -246,14 +246,14 @@ function rvfi_read (paddr, width, value) = {
   };
 }
 
-val rvfi_mem_exception : xlenbits -> unit
+val rvfi_mem_exception : mxlenbits -> unit
 function rvfi_mem_exception (paddr) = {
   /* Log only the memory address (without the value) if the write fails. */
   rvfi_mem_data[rvfi_mem_addr] = zero_extend(paddr);
   rvfi_mem_data_present = true;
 }
 
-val rvfi_wX : forall 'n, 0 <= 'n < 32. (int('n), xlenbits) -> unit
+val rvfi_wX : forall 'n, 0 <= 'n < 32. (int('n), mxlenbits) -> unit
 function rvfi_wX (r,v) = {
   rvfi_int_data[rvfi_rd_wdata] = zero_extend(v);
   rvfi_int_data[rvfi_rd_addr] = to_bits(8, r);

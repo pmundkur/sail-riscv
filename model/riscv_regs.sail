@@ -8,8 +8,8 @@
 
 /* program counter */
 
-register PC       : xlenbits
-register nextPC   : xlenbits
+register PC       : mxlenbits
+register nextPC   : mxlenbits
 
 /* mappings for assembly */
 
@@ -98,7 +98,7 @@ mapping sp_reg_name : unit <-> string = {
 
 mapping creg_name : cregidx <-> string = { Cregidx(i) <-> reg_name(Regidx(0b01 @ i)) }
 
-function xreg_write_callback(reg : regidx, value : xlenbits) -> unit = {
+function xreg_write_callback(reg : regidx, value : mxlenbits) -> unit = {
   let name = reg_name(reg);
   xreg_full_write_callback(name, reg, value);
 }
@@ -137,7 +137,7 @@ register x29 : regtype
 register x30 : regtype
 register x31 : regtype
 
-function rX (Regno(r) : regno) -> xlenbits = {
+function rX (Regno(r) : regno) -> mxlenbits = {
   let v : regtype =
     match r {
       0 => zero_reg,
@@ -176,7 +176,7 @@ function rX (Regno(r) : regno) -> xlenbits = {
   regval_from_reg(v)
 }
 
-function wX (Regno(r) : regno, in_v : xlenbits) -> unit = {
+function wX (Regno(r) : regno, in_v : mxlenbits) -> unit = {
   let v = regval_into_reg(in_v);
   match r {
     0  => (),
@@ -215,9 +215,9 @@ function wX (Regno(r) : regno, in_v : xlenbits) -> unit = {
   if r != 0 then xreg_write_callback(Regidx(to_bits(r)), in_v)
 }
 
-function rX_bits(Regidx(i) : regidx) -> xlenbits = rX(Regno(unsigned(i)))
+function rX_bits(Regidx(i) : regidx) -> mxlenbits = rX(Regno(unsigned(i)))
 
-function wX_bits(Regidx(i) : regidx, data : xlenbits) -> unit = {
+function wX_bits(Regidx(i) : regidx, data : mxlenbits) -> unit = {
   wX(Regno(unsigned(i))) = data
 }
 

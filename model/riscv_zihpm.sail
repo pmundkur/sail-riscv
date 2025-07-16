@@ -204,18 +204,18 @@ function legalize_hpmevent(v : HpmEvent) -> HpmEvent = {
   ]
 }
 
-function read_mhpmcounter(index : hpmidx) -> xlenbits = mhpmcounter[index][(mxlen - 1) .. 0]
+function read_mhpmcounter(index : hpmidx) -> mxlenbits = mhpmcounter[index][(mxlen - 1) .. 0]
 function read_mhpmcounterh(index : hpmidx) -> bits(32) = mhpmcounter[index][63 .. 32]
-function read_mhpmevent(index : hpmidx) -> xlenbits = mhpmevent[index].bits[(mxlen - 1) .. 0]
+function read_mhpmevent(index : hpmidx) -> mxlenbits = mhpmevent[index].bits[(mxlen - 1) .. 0]
 
 // Write the HPM CSRs. These return the new value of the CSR, for use in writeCSR.
-function write_mhpmcounter(index : hpmidx, value : xlenbits) -> unit =
+function write_mhpmcounter(index : hpmidx, value : mxlenbits) -> unit =
   if sys_writable_hpm_counters[index] == bitone then mhpmcounter[index][(mxlen - 1) .. 0] = value
 
 function write_mhpmcounterh(index : hpmidx, value : bits(32)) -> unit =
   if sys_writable_hpm_counters[index] == bitone then mhpmcounter[index][63 .. 32] = value
 
-function write_mhpmevent(index : hpmidx, value : xlenbits) -> unit =
+function write_mhpmevent(index : hpmidx, value : mxlenbits) -> unit =
   if sys_writable_hpm_counters[index] == bitone then
   mhpmevent[index] = legalize_hpmevent(Mk_HpmEvent(match mxlen {
     32 => mhpmevent[index].bits[63 .. 32] @ value,

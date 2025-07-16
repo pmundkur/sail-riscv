@@ -39,10 +39,10 @@ mapping clause assembly = ZBS_IOP(shamt, rs1, rd, op)
 
 function clause execute (ZBS_IOP(shamt, rs1, rd, op)) = {
   let rs1_val = X(rs1);
-  let mask : xlenbits = if mxlen == 32
+  let mask : mxlenbits = if mxlen == 32
                         then zero_extend(0b1) << shamt[4..0]
                         else zero_extend(0b1) << shamt;
-  let result : xlenbits = match op {
+  let result : mxlenbits = match op {
     BCLRI => rs1_val & ~(mask),
     BEXTI => zero_extend(bool_to_bits((rs1_val & mask) != zeros())),
     BINVI => rs1_val ^ mask,
@@ -84,10 +84,10 @@ mapping clause assembly = ZBS_RTYPE(rs2, rs1, rd, op)
 function clause execute (ZBS_RTYPE(rs2, rs1, rd, op)) = {
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
-  let mask : xlenbits = if mxlen == 32
+  let mask : mxlenbits = if mxlen == 32
                         then zero_extend(0b1) << rs2_val[4..0]
                         else zero_extend(0b1) << rs2_val[5..0];
-  let result : xlenbits = match op {
+  let result : mxlenbits = match op {
     BCLR => rs1_val & ~(mask),
     BEXT => zero_extend(bool_to_bits((rs1_val & mask) != zeros())),
     BINV => rs1_val ^ mask,

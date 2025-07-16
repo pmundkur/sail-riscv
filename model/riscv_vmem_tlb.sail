@@ -97,7 +97,7 @@ function match_TLB_Entry(
 // PRIVATE
 function flush_TLB_Entry(ent   : TLB_Entry,
                          asid  : option(asidbits),
-                         vaddr : option(xlenbits)) -> bool = {
+                         vaddr : option(mxlenbits)) -> bool = {
   let asid_matches : bool = match asid {
     Some(asid) => ent.asid == asid & not(ent.global),
     None() => true,
@@ -163,7 +163,7 @@ function add_to_TLB forall 'v, is_sv_mode('v) . (
 // Top-level TLB flush function
 // PUBLIC: invoked from exec SFENCE_VMA
 function flush_TLB(asid : option(asidbits),
-                   addr : option(xlenbits)) -> unit = {
+                   addr : option(mxlenbits)) -> unit = {
   foreach (i from 0 to (length(tlb) - 1)) {
     match tlb[i] {
       None()  => (),
