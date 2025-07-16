@@ -21,7 +21,7 @@ mapping clause assembly = CLMUL(rs2, rs1, rd)
 
 function clause execute (CLMUL(rs2, rs1, rd)) = {
   let prod = carryless_mul(X(rs1), X(rs2));
-  X(rd) = prod[xlen - 1 .. 0];
+  X(rd) = prod[mxlen - 1 .. 0];
   RETIRE_SUCCESS
 }
 
@@ -37,7 +37,7 @@ mapping clause assembly = CLMULH(rs2, rs1, rd)
 
 function clause execute (CLMULH(rs2, rs1, rd)) = {
   let prod = carryless_mul(X(rs1), X(rs2));
-  X(rd) = prod[2 * xlen - 1 .. xlen];
+  X(rd) = prod[2 * mxlen - 1 .. mxlen];
   RETIRE_SUCCESS
 }
 

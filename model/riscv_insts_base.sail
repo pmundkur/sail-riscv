@@ -198,13 +198,13 @@ mapping encdec_sop : sop <-> bits(3) = {
 
 mapping clause encdec = SHIFTIOP(shamt, rs1, rd, SLLI)
   <-> 0b000000 @ shamt @ encdec_reg(rs1) @ 0b001 @ encdec_reg(rd) @ 0b0010011
-  when xlen == 64 | shamt[5] == bitzero
+  when mxlen == 64 | shamt[5] == bitzero
 mapping clause encdec = SHIFTIOP(shamt, rs1, rd, SRLI)
   <-> 0b000000 @ shamt @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0010011
-  when xlen == 64 | shamt[5] == bitzero
+  when mxlen == 64 | shamt[5] == bitzero
 mapping clause encdec = SHIFTIOP(shamt, rs1, rd, SRAI)
   <-> 0b010000 @ shamt @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0010011
-  when xlen == 64 | shamt[5] == bitzero
+  when mxlen == 64 | shamt[5] == bitzero
 
 function clause execute (SHIFTIOP(shamt, rs1, rd, op)) = {
   let shamt = shamt[log2_mxlen - 1 .. 0];
@@ -274,8 +274,8 @@ mapping clause assembly = RTYPE(rs2, rs1, rd, op)
 /* ****************************************************************** */
 union clause instruction = LOAD : (bits(12), regidx, regidx, bool, word_width)
 
-/* unsigned loads are only present for widths strictly less than xlen,
-   signed loads also present for widths equal to xlen */
+/* unsigned loads are only present for widths strictly less than mxlen,
+   signed loads also present for widths equal to mxlen */
 function valid_load_encdec(width : word_width, is_unsigned : bool) -> bool =
   (width < mxlen_bytes) | (not(is_unsigned) & width <= mxlen_bytes)
 
@@ -337,7 +337,7 @@ union clause instruction = ADDIW : (bits(12), regidx, regidx)
 
 mapping clause encdec = ADDIW(imm, rs1, rd)
   <-> imm @ encdec_reg(rs1) @ 0b000 @ encdec_reg(rd) @ 0b0011011
-  when xlen == 64
+  when mxlen == 64
 
 function clause execute (ADDIW(imm, rs1, rd)) = {
   let result = X(rs1) + sign_extend(imm);
@@ -347,26 +347,26 @@ function clause execute (ADDIW(imm, rs1, rd)) = {
 
 mapping clause assembly = ADDIW(imm, rs1, rd)
   <-> "addiw" ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1) ^ sep() ^ hex_bits_signed_12(imm)
-  when xlen == 64
+  when mxlen == 64
 
 /* ****************************************************************** */
 union clause instruction = RTYPEW : (regidx, regidx, regidx, ropw)
 
 mapping clause encdec = RTYPEW(rs2, rs1, rd, ADDW)
   <-> 0b0000000 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b000 @ encdec_reg(rd) @ 0b0111011
-  when xlen == 64
+  when mxlen == 64
 mapping clause encdec = RTYPEW(rs2, rs1, rd, SUBW)
   <-> 0b0100000 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b000 @ encdec_reg(rd) @ 0b0111011
-  when xlen == 64
+  when mxlen == 64
 mapping clause encdec = RTYPEW(rs2, rs1, rd, SLLW)
   <-> 0b0000000 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b001 @ encdec_reg(rd) @ 0b0111011
-  when xlen == 64
+  when mxlen == 64
 mapping clause encdec = RTYPEW(rs2, rs1, rd, SRLW)
   <-> 0b0000000 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0111011
-  when xlen == 64
+  when mxlen == 64
 mapping clause encdec = RTYPEW(rs2, rs1, rd, SRAW)
   <-> 0b0100000 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0111011
-  when xlen == 64
+  when mxlen == 64
 
 function clause execute (RTYPEW(rs2, rs1, rd, op)) = {
   let rs1_val = X(rs1)[31..0];
@@ -392,20 +392,20 @@ mapping rtypew_mnemonic : ropw <-> string = {
 
 mapping clause assembly = RTYPEW(rs2, rs1, rd, op)
   <-> rtypew_mnemonic(op) ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1) ^ sep() ^ reg_name(rs2)
-  when xlen == 64
+  when mxlen == 64
 
 /* ****************************************************************** */
 union clause instruction = SHIFTIWOP : (bits(5), regidx, regidx, sopw)
 
 mapping clause encdec = SHIFTIWOP(shamt, rs1, rd, SLLIW)
   <-> 0b0000000 @ shamt @ encdec_reg(rs1) @ 0b001 @ encdec_reg(rd) @ 0b0011011
-  when xlen == 64
+  when mxlen == 64
 mapping clause encdec = SHIFTIWOP(shamt, rs1, rd, SRLIW)
   <-> 0b0000000 @ shamt @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0011011
-  when xlen == 64
+  when mxlen == 64
 mapping clause encdec = SHIFTIWOP(shamt, rs1, rd, SRAIW)
   <-> 0b0100000 @ shamt @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0011011
-  when xlen == 64
+  when mxlen == 64
 
 function clause execute (SHIFTIWOP(shamt, rs1, rd, op)) = {
   let rs1_val = X(rs1)[31..0];
@@ -426,7 +426,7 @@ mapping shiftiwop_mnemonic : sopw <-> string = {
 
 mapping clause assembly = SHIFTIWOP(shamt, rs1, rd, op)
   <-> shiftiwop_mnemonic(op) ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1) ^ sep() ^ hex_bits_5(shamt)
-  when xlen == 64
+  when mxlen == 64
 
 /* ****************************************************************** */
 union clause instruction = FENCE : (bits(4), bits(4))

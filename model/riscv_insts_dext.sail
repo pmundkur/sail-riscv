@@ -232,7 +232,7 @@ function haveDoubleFPU() -> bool = currentlyEnabled(Ext_D) | currentlyEnabled(Ex
 /* not used for RV32Zdinx (i.e. RV64-only or D-only).               */
 val validDoubleRegs : forall 'n, 'n > 0. (implicit('n), vector('n, fregidx)) -> bool
 function validDoubleRegs(n, regs) = {
-  if currentlyEnabled(Ext_Zdinx) & xlen == 32 then {
+  if currentlyEnabled(Ext_Zdinx) & mxlen == 32 then {
     foreach (i from 0 to (n - 1)) {
       if (fregidx_bits(regs[i])[0] == bitone) then return false;
     }
@@ -421,19 +421,19 @@ mapping clause encdec = F_UN_RM_FF_TYPE_D(rs1, rm, rd, FCVT_D_S)
 
 mapping clause encdec = F_UN_RM_FX_TYPE_D(rs1, rm, rd, FCVT_L_D)
   <-> 0b110_0001 @ 0b00010 @ encdec_freg(rs1) @ encdec_rounding_mode (rm) @ encdec_reg(rd) @ 0b101_0011
-  when haveDoubleFPU() & xlen >= 64
+  when haveDoubleFPU() & mxlen >= 64
 
 mapping clause encdec = F_UN_RM_FX_TYPE_D(rs1, rm, rd, FCVT_LU_D)
   <-> 0b110_0001 @ 0b00011 @ encdec_freg(rs1) @ encdec_rounding_mode (rm) @ encdec_reg(rd) @ 0b101_0011
-  when haveDoubleFPU() & xlen >= 64
+  when haveDoubleFPU() & mxlen >= 64
 
 mapping clause encdec = F_UN_RM_XF_TYPE_D(rs1, rm, rd, FCVT_D_L)
   <-> 0b110_1001 @ 0b00010 @ encdec_reg(rs1) @ encdec_rounding_mode (rm) @ encdec_freg(rd) @ 0b101_0011
-  when haveDoubleFPU() & xlen >= 64
+  when haveDoubleFPU() & mxlen >= 64
 
 mapping clause encdec = F_UN_RM_XF_TYPE_D(rs1, rm, rd, FCVT_D_LU)
   <-> 0b110_1001 @ 0b00011 @ encdec_reg(rs1) @ encdec_rounding_mode (rm) @ encdec_freg(rd) @ 0b101_0011
-  when haveDoubleFPU() & xlen >= 64
+  when haveDoubleFPU() & mxlen >= 64
 
 /* Execution semantics ================================ */
 
@@ -543,7 +543,7 @@ function clause execute (F_UN_RM_FF_TYPE_D(rs1, rm, rd, FCVT_D_S)) = {
 }
 
 function clause execute (F_UN_RM_FX_TYPE_D(rs1, rm, rd, FCVT_L_D)) = {
-  assert(xlen >= 64);
+  assert(mxlen >= 64);
   let rs1_val_D = F_or_X_D(rs1);
   match (select_instr_or_fcsr_rm (rm)) {
     None() => Illegal_Instruction(),
@@ -559,7 +559,7 @@ function clause execute (F_UN_RM_FX_TYPE_D(rs1, rm, rd, FCVT_L_D)) = {
 }
 
 function clause execute (F_UN_RM_FX_TYPE_D(rs1, rm, rd, FCVT_LU_D)) = {
-  assert(xlen >= 64);
+  assert(mxlen >= 64);
   let rs1_val_D = F_or_X_D(rs1);
   match (select_instr_or_fcsr_rm (rm)) {
     None() => Illegal_Instruction(),
@@ -575,7 +575,7 @@ function clause execute (F_UN_RM_FX_TYPE_D(rs1, rm, rd, FCVT_LU_D)) = {
 }
 
 function clause execute (F_UN_RM_XF_TYPE_D(rs1, rm, rd, FCVT_D_L)) = {
-  assert(xlen >= 64);
+  assert(mxlen >= 64);
   let rs1_val_L = X(rs1)[63..0];
   match (select_instr_or_fcsr_rm (rm)) {
     None() => Illegal_Instruction(),
@@ -591,7 +591,7 @@ function clause execute (F_UN_RM_XF_TYPE_D(rs1, rm, rd, FCVT_D_L)) = {
 }
 
 function clause execute (F_UN_RM_XF_TYPE_D(rs1, rm, rd, FCVT_D_LU)) = {
-  assert(xlen >= 64);
+  assert(mxlen >= 64);
   let rs1_val_LU = X(rs1)[63..0];
   match (select_instr_or_fcsr_rm (rm)) {
     None() => Illegal_Instruction(),
@@ -844,11 +844,11 @@ mapping clause encdec = F_UN_X_TYPE_D(rs1, rd, FCLASS_D)
 
 mapping clause encdec = F_UN_X_TYPE_D(rs1, rd, FMV_X_D)
                     <-> 0b111_0001 @ 0b00000 @ encdec_freg(rs1) @ 0b000 @ encdec_reg(rd) @ 0b101_0011
-                    when currentlyEnabled(Ext_D) & xlen >= 64
+                    when currentlyEnabled(Ext_D) & mxlen >= 64
 
 mapping clause encdec = F_UN_F_TYPE_D(rs1, rd, FMV_D_X)
                     <-> 0b111_1001 @ 0b00000 @ encdec_reg(rs1) @ 0b000 @ encdec_freg(rd) @ 0b101_0011
-                    when currentlyEnabled(Ext_D) & xlen >= 64
+                    when currentlyEnabled(Ext_D) & mxlen >= 64
 
 /* Execution semantics ================================ */
 
@@ -873,13 +873,13 @@ function clause execute (F_UN_X_TYPE_D(rs1, rd, FCLASS_D)) = {
 }
 
 function clause execute (F_UN_X_TYPE_D(rs1, rd, FMV_X_D)) = {
-  assert(xlen >= 64 & flen >= 64);
+  assert(mxlen >= 64 & flen >= 64);
   X(rd) = sign_extend(F(rs1)[63..0]);
   RETIRE_SUCCESS
 }
 
 function clause execute (F_UN_F_TYPE_D(rs1, rd, FMV_D_X)) = {
-  assert(xlen >= 64 & flen >= 64);
+  assert(mxlen >= 64 & flen >= 64);
   F(rd) = nan_box(X(rs1)[63..0]);
   RETIRE_SUCCESS
 }

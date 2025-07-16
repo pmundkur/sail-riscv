@@ -60,7 +60,7 @@ for example, Python should follow the standard PEP-8 style.
 ```
 mapping clause encdec = LOAD(imm, rs1, rd, is_unsigned, size, false, false)
   <-> imm @ encdec_reg(rs1) @ bool_bits(is_unsigned) @ size_enc(size) @ encdec_reg(rd) @ 0b0000011
-  when (size_bytes(size) < xlen_bytes) | (not(is_unsigned) & size_bytes(size) <= xlen_bytes)
+  when (size_bytes(size) < mxlen_bytes) | (not(is_unsigned) & size_bytes(size) <= mxlen_bytes)
 ```
 
 If these mapping clauses appear in a group (e.g., see `SHIFTIOP`),
@@ -76,11 +76,11 @@ corresponding elements vertically aligned.
 
 - All instructions should be built as part of both the RV32 and RV64 models so
   as to provide a path to supporting mutable MXL/SXL/UXL; if necessary,
-  constructs like `assert(xlen == 32)` at the start of the body can be
+  constructs like `assert(mxlen == 32)` at the start of the body can be
   used to suppress any type errors that arise as a result
 
 - Avoid the use of hard-coded constants like 32 even if the instruction is
-  RV32-specific, instead favouring `xlen` or a computed constant to
+  RV32-specific, instead favouring `mxlen` or a computed constant to
   more clearly express the underlying intent
 
 - Local variables should be made immutable whenever possible, but short

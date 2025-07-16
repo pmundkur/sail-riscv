@@ -48,9 +48,9 @@ function write_mhpmeventh(index : hpmidx, value : bits(32)) -> unit =
   mhpmevent[index] = legalize_hpmevent(Mk_HpmEvent(value @ mhpmevent[index].bits[31 .. 0]))
 
 // mhpmevent3..31h
-function clause is_CSR_defined(0b0111001 /* 0x720 */ @ index : bits(5) if unsigned(index) >= 3) = currentlyEnabled(Ext_Sscofpmf) & (xlen == 32)
-function clause read_CSR(0b0111001 /* 0x720 */ @ index : bits(5) if xlen == 32 & unsigned(index) >= 3) = read_mhpmeventh(hpmidx_from_bits(index))
-function clause write_CSR((0b0111001 /* 0x720 */ @ index : bits(5), value) if xlen == 32 & unsigned(index) >= 3) = {
+function clause is_CSR_defined(0b0111001 /* 0x720 */ @ index : bits(5) if unsigned(index) >= 3) = currentlyEnabled(Ext_Sscofpmf) & (mxlen == 32)
+function clause read_CSR(0b0111001 /* 0x720 */ @ index : bits(5) if mxlen == 32 & unsigned(index) >= 3) = read_mhpmeventh(hpmidx_from_bits(index))
+function clause write_CSR((0b0111001 /* 0x720 */ @ index : bits(5), value) if mxlen == 32 & unsigned(index) >= 3) = {
   let index = hpmidx_from_bits(index);
   write_mhpmeventh(index, value);
   Ok(read_mhpmeventh(index))

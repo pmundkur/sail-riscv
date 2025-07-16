@@ -89,9 +89,9 @@ set(tests
 )
 
 
-foreach (xlen IN ITEMS 32 64)
-    set(arch "rv${xlen}d")
-    if (xlen EQUAL 32)
+foreach (mxlen IN ITEMS 32 64)
+    set(arch "rv${mxlen}d")
+    if (mxlen EQUAL 32)
         set(mabi "ilp32")
     else()
         set(mabi "lp64")
@@ -105,9 +105,9 @@ foreach (xlen IN ITEMS 32 64)
         add_custom_command(
             OUTPUT ${elf}
             DEPENDS ${common_deps} "src/${test_source}"
-            COMMAND ${CROSS_COMPILER_COMMAND_RV${xlen}}
+            COMMAND ${CROSS_COMPILER_COMMAND_RV${mxlen}}
                 # The ISA string to compile for.
-                -march=rv${xlen}gc
+                -march=rv${mxlen}gc
                 # Calling convention to use. Valid values are 'ilp32' or 'lp64' for 32/64-bit,
                 # optionally followed by 'f' or 'd' for hard-float. All combinations are valid.
                 -mabi=${mabi}d

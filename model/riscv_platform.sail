@@ -447,7 +447,7 @@ function init_platform() -> unit = {
 
 function handle_illegal(instbits : instbits) -> unit = {
   let info = if   plat_mtval_has_illegal_inst_bits
-             then Some(zero_extend(xlen, instbits))
+             then Some(zero_extend(mxlen, instbits))
              else None();
   let t : sync_exception = struct { trap    = E_Illegal_Instr(),
                                     excinfo = info,

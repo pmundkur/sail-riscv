@@ -22,7 +22,7 @@ function get_next_pc() = nextPC
 
 val set_next_pc : xlenbits -> unit
 function set_next_pc(pc) = {
-  sail_branch_announce(xlen, pc);
+  sail_branch_announce(mxlen, pc);
   nextPC = pc
 }
 
@@ -34,5 +34,5 @@ function tick_pc() = {
 
 // For forcing PC from C. This is ugly.
 function force_pc(pc : bits(64)) -> unit = {
-  PC = truncate(pc, xlen);
+  PC = truncate(pc, mxlen);
 }

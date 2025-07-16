@@ -7,7 +7,7 @@
 /*=======================================================================================*/
 
 /* These functions define the primitives for physical memory access.
- * They depend on the XLEN of the architecture.
+ * They depend on the MXLEN of the architecture.
  *
  * They also depend on the type of metadata that is read and written
  * to physical memory.  For models that do not require this metadata,

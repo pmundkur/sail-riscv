@@ -49,7 +49,7 @@ function handle_illegal_vtype() = {
    * NOTE: vstart should NOT be zeroed out if trapping.
    */
 
-  vtype.bits = 0b1 @ zeros(xlen - 1); /* set vtype.vill */
+  vtype.bits = 0b1 @ zeros(mxlen - 1); /* set vtype.vill */
   vl = zeros();
   csr_write_callback("vtype", vtype.bits);
   csr_write_callback("vl", vl);
@@ -70,7 +70,7 @@ function calculate_new_vl(AVL : int, VLMAX : int) -> xlenbits = {
     }
     else VLMAX;
 
-  to_bits_unsafe(xlen, new_vl)
+  to_bits_unsafe(mxlen, new_vl)
 }
 
 /* *********************************** vsetvli *********************************** */
@@ -103,7 +103,7 @@ function clause execute VSETVLI(ma, ta, sew, lmul, rs1, rd) = {
     vl = calculate_new_vl(AVL, VLMAX);
     X(rd) = vl;
   } else if (rd != zreg) then { /* set vl to VLMAX */
-    vl = to_bits_unsafe(xlen, VLMAX);
+    vl = to_bits_unsafe(mxlen, VLMAX);
     X(rd) = vl;
   } else { /* keep existing vl if it is compatible and vtype.ill is valid */
     let ratio_pow_new = SEW_pow_new - LMUL_pow_new;
@@ -112,7 +112,7 @@ function clause execute VSETVLI(ma, ta, sew, lmul, rs1, rd) = {
   };
 
   /* set vtype */
-  vtype.bits = 0b0 @ zeros(xlen - 9) @ ma @ ta @ sew @ lmul;
+  vtype.bits = 0b0 @ zeros(mxlen - 9) @ ma @ ta @ sew @ lmul;
 
   /* reset vstart to 0 */
   set_vstart(zeros());
@@ -167,7 +167,7 @@ function clause execute VSETVL(rs2, rs1, rd) = {
     vl = calculate_new_vl(AVL, VLMAX);
     X(rd) = vl;
   } else if (rd != zreg) then { /* set vl to VLMAX */
-    vl = to_bits_unsafe(xlen, VLMAX);
+    vl = to_bits_unsafe(mxlen, VLMAX);
     X(rd) = vl;
   } else { /* keep existing vl if it is compatible and vtype.ill is valid */
     let ratio_pow_new = SEW_pow_new - LMUL_pow_new;
@@ -176,7 +176,7 @@ function clause execute VSETVL(rs2, rs1, rd) = {
   };
 
   /* set vtype */
-  vtype.bits = 0b0 @ zeros(xlen - 9) @ ma @ ta @ sew @ lmul;
+  vtype.bits = 0b0 @ zeros(mxlen - 9) @ ma @ ta @ sew @ lmul;
 
   /* reset vstart to 0 */
   set_vstart(zeros());
@@ -216,7 +216,7 @@ function clause execute VSETIVLI(ma, ta, sew, lmul, uimm, rd) = {
   X(rd) = vl;
 
   /* set vtype */
-  vtype.bits = 0b0 @ zeros(xlen - 9) @ ma @ ta @ sew @ lmul;
+  vtype.bits = 0b0 @ zeros(mxlen - 9) @ ma @ ta @ sew @ lmul;
 
   /* reset vstart to 0 */
   set_vstart(zeros());

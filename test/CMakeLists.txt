@@ -41,7 +41,7 @@ function(download_riscv_tests DOWNLOAD_PATH TARBALL_NAME DOWNLOAD_URL)
 endfunction()
 
 # Download and add RVV tests.
-# NOTE: Setting XLEN independently of ELEN is not
+# NOTE: Setting MXLEN independently of ELEN is not
 # supported by the RISC-V Vector Test suite.
 foreach(vlen IN ITEMS 128 256 512)
     foreach(elen IN ITEMS 32 64)
@@ -70,13 +70,13 @@ foreach(vlen IN ITEMS 128 256 512)
             add_custom_command(
                 OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config_rv${elen}d_v${vlen}_e${elen}.json"
                 COMMAND jq
-                    '.base.xlen = ${elen} |
+                    '.base.mxlen = ${elen} |
                      .extensions.V.vlen_exp = (${vlen} | log2) |
                      .extensions.V.elen_exp = (${elen} | log2) '
                     "${CMAKE_CURRENT_SOURCE_DIR}/../config/rv${elen}d.json"
                     > "${CMAKE_CURRENT_BINARY_DIR}/config_rv${elen}d_v${vlen}_e${elen}.json"
                 DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../config/rv${elen}d.json"
-                COMMENT "Generating config for vlen=${vlen}, elen=${elen}, xlen=${elen}"
+                COMMENT "Generating config for vlen=${vlen}, elen=${elen}, mxlen=${elen}"
             )
 
             add_custom_target(config_rv${elen}d_v${vlen}_e${elen} ALL

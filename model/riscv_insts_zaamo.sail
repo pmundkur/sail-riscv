@@ -15,8 +15,8 @@ function clause currentlyEnabled(Ext_Zacas) = hartSupports(Ext_Zacas) & currentl
 // Zabha defines AMOs for 8-bit and 16-bit.
 //
 // The Zacas extension adds a CAS operation which support 32, 64
-// and 128-bit operands. Only sizes up to XLEN*2 are supported
-// (so 128-bit is RV64-only). When XLEN*2 is used the operands
+// and 128-bit operands. Only sizes up to MXLEN*2 are supported
+// (so 128-bit is RV64-only). When MXLEN*2 is used the operands
 // are stored in even-numbered register pairs.
 //
 // If Zabha and Zacas are implemented then CAS supports 8 and

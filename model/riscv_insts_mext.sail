@@ -32,10 +32,10 @@ function clause execute (MUL(rs2, rs1, rd, mul_op)) = {
   let rs1_int = if mul_op.signed_rs1 then signed(rs1_bits) else unsigned(rs1_bits);
   let rs2_int = if mul_op.signed_rs2 then signed(rs2_bits) else unsigned(rs2_bits);
 
-  let result_wide = to_bits_truncate(2 * xlen, rs1_int * rs2_int);
+  let result_wide = to_bits_truncate(2 * mxlen, rs1_int * rs2_int);
   X(rd) = if   mul_op.high
-          then result_wide[(2 * xlen - 1) .. xlen]
-          else result_wide[(xlen - 1) .. 0];
+          then result_wide[(2 * mxlen - 1) .. mxlen]
+          else result_wide[(mxlen - 1) .. 0];
   RETIRE_SUCCESS
 }
 
@@ -64,7 +64,7 @@ function clause execute (DIV(rs2, rs1, rd, is_unsigned)) = {
 
   let quotient = if rs2_int == 0 then -1 else quot_round_zero(rs1_int, rs2_int);
   // Check for signed overflow.
-  let quotient = if not(is_unsigned) & quotient >= 2 ^ (xlen - 1) then negate(2 ^ (xlen - 1)) else quotient;
+  let quotient = if not(is_unsigned) & quotient >= 2 ^ (mxlen - 1) then negate(2 ^ (mxlen - 1)) else quotient;
   X(rd) = to_bits_truncate(quotient);
   RETIRE_SUCCESS
 }
@@ -99,7 +99,7 @@ union clause instruction = MULW : (regidx, regidx, regidx)
 
 mapping clause encdec = MULW(rs2, rs1, rd)
   <-> 0b0000001 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b000 @ encdec_reg(rd) @ 0b0111011
-  when xlen == 64 & (currentlyEnabled(Ext_M) | currentlyEnabled(Ext_Zmmul))
+  when mxlen == 64 & (currentlyEnabled(Ext_M) | currentlyEnabled(Ext_Zmmul))
 
 function clause execute (MULW(rs2, rs1, rd)) = {
   let rs1_bits = X(rs1)[31..0];
@@ -114,14 +114,14 @@ function clause execute (MULW(rs2, rs1, rd)) = {
 
 mapping clause assembly = MULW(rs2, rs1, rd)
   <-> "mulw" ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1) ^ sep() ^ reg_name(rs2)
-  when xlen == 64
+  when mxlen == 64
 
 /* ****************************************************************** */
 union clause instruction = DIVW : (regidx, regidx, regidx, bool)
 
 mapping clause encdec = DIVW(rs2, rs1, rd, is_unsigned)
   <-> 0b0000001 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b10 @ bool_bits(is_unsigned) @ encdec_reg(rd) @ 0b0111011
-  when xlen == 64 & currentlyEnabled(Ext_M)
+  when mxlen == 64 & currentlyEnabled(Ext_M)
 
 function clause execute (DIVW(rs2, rs1, rd, is_unsigned)) = {
   let rs1_bits = X(rs1)[31..0];
@@ -138,14 +138,14 @@ function clause execute (DIVW(rs2, rs1, rd, is_unsigned)) = {
 
 mapping clause assembly = DIVW(rs2, rs1, rd, is_unsigned)
   <-> "div" ^ maybe_u(is_unsigned) ^ "w" ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1) ^ sep() ^ reg_name(rs2)
-  when xlen == 64
+  when mxlen == 64
 
 /* ****************************************************************** */
 union clause instruction = REMW : (regidx, regidx, regidx, bool)
 
 mapping clause encdec = REMW(rs2, rs1, rd, is_unsigned)
   <-> 0b0000001 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b11 @ bool_bits(is_unsigned) @ encdec_reg(rd) @ 0b0111011
-  when xlen == 64 & currentlyEnabled(Ext_M)
+  when mxlen == 64 & currentlyEnabled(Ext_M)
 
 function clause execute (REMW(rs2, rs1, rd, is_unsigned)) = {
   let rs1_bits = X(rs1)[31..0];
@@ -161,4 +161,4 @@ function clause execute (REMW(rs2, rs1, rd, is_unsigned)) = {
 
 mapping clause assembly = REMW(rs2, rs1, rd, is_unsigned)
   <-> "rem" ^ maybe_u(is_unsigned) ^ "w" ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1) ^ sep() ^ reg_name(rs2)
-  when xlen == 64
+  when mxlen == 64

@@ -204,23 +204,23 @@ function legalize_hpmevent(v : HpmEvent) -> HpmEvent = {
   ]
 }
 
-function read_mhpmcounter(index : hpmidx) -> xlenbits = mhpmcounter[index][(xlen - 1) .. 0]
+function read_mhpmcounter(index : hpmidx) -> xlenbits = mhpmcounter[index][(mxlen - 1) .. 0]
 function read_mhpmcounterh(index : hpmidx) -> bits(32) = mhpmcounter[index][63 .. 32]
-function read_mhpmevent(index : hpmidx) -> xlenbits = mhpmevent[index].bits[(xlen - 1) .. 0]
+function read_mhpmevent(index : hpmidx) -> xlenbits = mhpmevent[index].bits[(mxlen - 1) .. 0]
 
 // Write the HPM CSRs. These return the new value of the CSR, for use in writeCSR.
 function write_mhpmcounter(index : hpmidx, value : xlenbits) -> unit =
-  if sys_writable_hpm_counters[index] == bitone then mhpmcounter[index][(xlen - 1) .. 0] = value
+  if sys_writable_hpm_counters[index] == bitone then mhpmcounter[index][(mxlen - 1) .. 0] = value
 
 function write_mhpmcounterh(index : hpmidx, value : bits(32)) -> unit =
   if sys_writable_hpm_counters[index] == bitone then mhpmcounter[index][63 .. 32] = value
 
 function write_mhpmevent(index : hpmidx, value : xlenbits) -> unit =
   if sys_writable_hpm_counters[index] == bitone then
-  mhpmevent[index] = legalize_hpmevent(Mk_HpmEvent(match xlen {
+  mhpmevent[index] = legalize_hpmevent(Mk_HpmEvent(match mxlen {
     32 => mhpmevent[index].bits[63 .. 32] @ value,
     64 => value,
-    _ => internal_error(__FILE__, __LINE__, "Unsupported xlen"),
+    _ => internal_error(__FILE__, __LINE__, "Unsupported mxlen"),
   }))
 
 /* Hardware Performance Monitoring event selection */
@@ -234,17 +234,17 @@ function clause write_CSR((0b0011001 /* 0x320 */ @ index : bits(5), value) if un
 
 /* Hardware Performance Monitoring machine mode counters */
 function clause is_CSR_defined(0b1011000 /* 0xB00 */ @ index : bits(5) if unsigned(index) >= 3) = currentlyEnabled(Ext_Zihpm) // mhpmcounter3..31
-function clause is_CSR_defined(0b1011100 /* 0xB80 */ @ index : bits(5) if unsigned(index) >= 3) = currentlyEnabled(Ext_Zihpm) & (xlen == 32) // mhpmcounterh3..31
+function clause is_CSR_defined(0b1011100 /* 0xB80 */ @ index : bits(5) if unsigned(index) >= 3) = currentlyEnabled(Ext_Zihpm) & (mxlen == 32) // mhpmcounterh3..31
 
 function clause read_CSR(0b1011000 /* 0xB00 */ @ index : bits(5) if unsigned(index) >= 3) = read_mhpmcounter(hpmidx_from_bits(index))
-function clause read_CSR(0b1011100 /* 0xB80 */ @ index : bits(5) if xlen == 32 & unsigned(index) >= 3) = read_mhpmcounterh(hpmidx_from_bits(index))
+function clause read_CSR(0b1011100 /* 0xB80 */ @ index : bits(5) if mxlen == 32 & unsigned(index) >= 3) = read_mhpmcounterh(hpmidx_from_bits(index))
 
 function clause write_CSR((0b1011000 /* 0xB00 */ @ index : bits(5), value) if unsigned(index) >= 3) = {
   let index = hpmidx_from_bits(index);
   write_mhpmcounter(index, value);
   Ok(read_mhpmcounter(index))
 }
-function clause write_CSR((0b1011100 /* 0xB80 */ @ index : bits(5), value) if xlen == 32 & unsigned(index) >= 3) = {
+function clause write_CSR((0b1011100 /* 0xB80 */ @ index : bits(5), value) if mxlen == 32 & unsigned(index) >= 3) = {
   let index = hpmidx_from_bits(index);
   write_mhpmcounterh(index, value);
   Ok(read_mhpmcounterh(index))
@@ -252,7 +252,7 @@ function clause write_CSR((0b1011100 /* 0xB80 */ @ index : bits(5), value) if xl
 
 /* Hardware Performance Monitoring user mode counters */
 function clause is_CSR_defined(0b1100000 /* 0xC00 */ @ index : bits(5) if unsigned(index) >= 3) = currentlyEnabled(Ext_Zihpm) & currentlyEnabled(Ext_U) // hpmcounter3..31
-function clause is_CSR_defined(0b1100100 /* 0xC80 */ @ index : bits(5) if unsigned(index) >= 3) = currentlyEnabled(Ext_Zihpm) & currentlyEnabled(Ext_U) & (xlen == 32) // hpmcounterh3..31
+function clause is_CSR_defined(0b1100100 /* 0xC80 */ @ index : bits(5) if unsigned(index) >= 3) = currentlyEnabled(Ext_Zihpm) & currentlyEnabled(Ext_U) & (mxlen == 32) // hpmcounterh3..31
 
 function clause read_CSR(0b1100000 /* 0xC00 */ @ index : bits(5) if unsigned(index) >= 3) = read_mhpmcounter(hpmidx_from_bits(index))
-function clause read_CSR(0b1100100 /* 0xC80 */ @ index : bits(5) if xlen == 32 & unsigned(index) >= 3) = read_mhpmcounterh(hpmidx_from_bits(index))
+function clause read_CSR(0b1100100 /* 0xC80 */ @ index : bits(5) if mxlen == 32 & unsigned(index) >= 3) = read_mhpmcounterh(hpmidx_from_bits(index))

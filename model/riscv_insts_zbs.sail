@@ -13,19 +13,19 @@ union clause instruction = ZBS_IOP : (bits(6), regidx, regidx, biop_zbs)
 
 mapping clause encdec = ZBS_IOP(shamt, rs1, rd, BCLRI)
   <-> 0b010010 @ shamt @ encdec_reg(rs1) @ 0b001 @ encdec_reg(rd) @ 0b0010011
-  when currentlyEnabled(Ext_Zbs) & (xlen == 64 | shamt[5] == bitzero)
+  when currentlyEnabled(Ext_Zbs) & (mxlen == 64 | shamt[5] == bitzero)
 
 mapping clause encdec = ZBS_IOP(shamt, rs1, rd, BEXTI)
   <-> 0b010010 @ shamt @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0010011
-  when currentlyEnabled(Ext_Zbs) & (xlen == 64 | shamt[5] == bitzero)
+  when currentlyEnabled(Ext_Zbs) & (mxlen == 64 | shamt[5] == bitzero)
 
 mapping clause encdec = ZBS_IOP(shamt, rs1, rd, BINVI)
   <-> 0b011010 @ shamt @ encdec_reg(rs1) @ 0b001 @ encdec_reg(rd) @ 0b0010011
-  when currentlyEnabled(Ext_Zbs) & (xlen == 64 | shamt[5] == bitzero)
+  when currentlyEnabled(Ext_Zbs) & (mxlen == 64 | shamt[5] == bitzero)
 
 mapping clause encdec = ZBS_IOP(shamt, rs1, rd, BSETI)
   <-> 0b001010 @ shamt @ encdec_reg(rs1) @ 0b001 @ encdec_reg(rd) @ 0b0010011
-  when currentlyEnabled(Ext_Zbs) & (xlen == 64 | shamt[5] == bitzero)
+  when currentlyEnabled(Ext_Zbs) & (mxlen == 64 | shamt[5] == bitzero)
 
 mapping zbs_iop_mnemonic : biop_zbs <-> string = {
   BCLRI <-> "bclri",
@@ -39,7 +39,7 @@ mapping clause assembly = ZBS_IOP(shamt, rs1, rd, op)
 
 function clause execute (ZBS_IOP(shamt, rs1, rd, op)) = {
   let rs1_val = X(rs1);
-  let mask : xlenbits = if xlen == 32
+  let mask : xlenbits = if mxlen == 32
                         then zero_extend(0b1) << shamt[4..0]
                         else zero_extend(0b1) << shamt;
   let result : xlenbits = match op {
@@ -84,7 +84,7 @@ mapping clause assembly = ZBS_RTYPE(rs2, rs1, rd, op)
 function clause execute (ZBS_RTYPE(rs2, rs1, rd, op)) = {
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
-  let mask : xlenbits = if xlen == 32
+  let mask : xlenbits = if mxlen == 32
                         then zero_extend(0b1) << rs2_val[4..0]
                         else zero_extend(0b1) << rs2_val[5..0];
   let result : xlenbits = match op {

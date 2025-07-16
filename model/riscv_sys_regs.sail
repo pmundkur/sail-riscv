@@ -78,8 +78,8 @@ bitfield Misa : xlenbits = {
 }
 register misa : Misa =
   [ Mk_Misa(zeros()) with
-    // MXL is a read-only field that specifies the native XLEN.
-    MXL = architecture(if xlen == 32 then RV32 else RV64),
+    // MXL is a read-only field that specifies the native MXLEN.
+    MXL = architecture(if mxlen == 32 then RV32 else RV64),
   ]
 
 /* whether misa is R/W */
@@ -197,13 +197,13 @@ bitfield Mstatus : bits(64) = {
 }
 
 function get_mstatus_SXL(m : Mstatus) -> arch_xlen = {
-  if   xlen == 32
+  if   mxlen == 32
   then architecture(RV32)
   else m[SXL]
 }
 
 function get_mstatus_UXL(m : Mstatus) -> arch_xlen = {
-  if   xlen == 32
+  if   mxlen == 32
   then architecture(RV32)
   else m[UXL]
 }
@@ -212,7 +212,7 @@ function legalize_mstatus(o : Mstatus, v : bits(64)) -> Mstatus = {
   /*
    * Populate all defined fields using the bits of v, stripping anything
    * that does not have a matching bitfield entry. The SD bits are handled
-   * explicitly later depending on xlen.
+   * explicitly later depending on mxlen.
    */
   let v = Mk_Mstatus(v);
 
@@ -225,8 +225,8 @@ function legalize_mstatus(o : Mstatus, v : bits(64)) -> Mstatus = {
     // MBE = v[MBE],
     // SBE = v[SBE],
     /* We don't support dynamic changes to SXL and UXL. */
-    // SXL = if xlen == 64 then v[SXL] else o[SXL],
-    // UXL = if xlen == 64 then v[UXL] else o[UXL],
+    // SXL = if mxlen == 64 then v[SXL] else o[SXL],
+    // UXL = if mxlen == 64 then v[UXL] else o[UXL],
     // SDT = v[SDT],
     // SPELP = v[SPELP],
     TSR = if currentlyEnabled(Ext_S) then v[TSR] else 0b0,
@@ -262,12 +262,12 @@ function legalize_mstatus(o : Mstatus, v : bits(64)) -> Mstatus = {
 
 register mstatus : Mstatus = {
   // Initialise SXL and UXL.
-  let mxl = architecture(if xlen == 32 then RV32 else RV64);
+  let mxl = architecture(if mxlen == 32 then RV32 else RV64);
   [ Mk_Mstatus(zeros()) with
     // These fields do not exist on RV32 and are read-only zero
     // if the corresponding mode is not supported.
-    SXL = if xlen != 32 & hartSupports(Ext_S) then mxl else zeros(),
-    UXL = if xlen != 32 & hartSupports(Ext_U) then mxl else zeros(),
+    SXL = if mxlen != 32 & hartSupports(Ext_S) then mxl else zeros(),
+    UXL = if mxlen != 32 & hartSupports(Ext_U) then mxl else zeros(),
   ]
 }
 
@@ -275,14 +275,14 @@ mapping clause csr_name_map = 0x300  <-> "mstatus"
 mapping clause csr_name_map = 0x310  <-> "mstatush"
 
 function clause is_CSR_defined(0x300) = true // mstatus
-function clause is_CSR_defined(0x310) = xlen == 32 // mstatush
+function clause is_CSR_defined(0x310) = mxlen == 32 // mstatush
 
-function clause read_CSR(0x300) = mstatus.bits[xlen - 1 .. 0]
-function clause read_CSR(0x310 if xlen == 32) = mstatus.bits[63 .. 32]
+function clause read_CSR(0x300) = mstatus.bits[mxlen - 1 .. 0]
+function clause read_CSR(0x310 if mxlen == 32) = mstatus.bits[63 .. 32]
 
-function clause write_CSR((0x300, value) if xlen == 64) = { mstatus = legalize_mstatus(mstatus, value); Ok(mstatus.bits) }
-function clause write_CSR((0x300, value) if xlen == 32) = { mstatus = legalize_mstatus(mstatus, mstatus.bits[63 .. 32] @ value); Ok(mstatus.bits[31 .. 0]) }
-function clause write_CSR((0x310, value) if xlen == 32) = { mstatus = legalize_mstatus(mstatus, value @ mstatus.bits[31 .. 0]); Ok(mstatus.bits[63 .. 32]) }
+function clause write_CSR((0x300, value) if mxlen == 64) = { mstatus = legalize_mstatus(mstatus, value); Ok(mstatus.bits) }
+function clause write_CSR((0x300, value) if mxlen == 32) = { mstatus = legalize_mstatus(mstatus, mstatus.bits[63 .. 32] @ value); Ok(mstatus.bits[31 .. 0]) }
+function clause write_CSR((0x310, value) if mxlen == 32) = { mstatus = legalize_mstatus(mstatus, value @ mstatus.bits[31 .. 0]); Ok(mstatus.bits[63 .. 32]) }
 
 /* architecture and extension checks */
 
@@ -331,20 +331,20 @@ mapping clause csr_name_map = 0x757  <-> "mseccfgh"
 
 // "mseccfg exists if Zkr is implemented, or if it is required by other processor features."
 function clause is_CSR_defined(0x747) = currentlyEnabled(Ext_Zkr) // mseccfg
-function clause is_CSR_defined(0x757) = currentlyEnabled(Ext_Zkr) & xlen == 32 // mseccfgh
+function clause is_CSR_defined(0x757) = currentlyEnabled(Ext_Zkr) & mxlen == 32 // mseccfgh
 
-function clause read_CSR(0x747) = mseccfg.bits[xlen - 1 .. 0]
-function clause read_CSR(0x757 if xlen == 32) = mseccfg.bits[63 .. 32]
+function clause read_CSR(0x747) = mseccfg.bits[mxlen - 1 .. 0]
+function clause read_CSR(0x757 if mxlen == 32) = mseccfg.bits[63 .. 32]
 
-function clause write_CSR((0x747, value) if xlen == 32) = {
+function clause write_CSR((0x747, value) if mxlen == 32) = {
   mseccfg = legalize_mseccfg(mseccfg, mseccfg.bits[63 .. 32] @ value);
   Ok(mseccfg.bits[31 .. 0])
 }
-function clause write_CSR((0x747, value) if xlen == 64) = {
+function clause write_CSR((0x747, value) if mxlen == 64) = {
   mseccfg = legalize_mseccfg(mseccfg, value);
   Ok(mseccfg.bits)
 }
-function clause write_CSR((0x757, value) if xlen == 32) = {
+function clause write_CSR((0x757, value) if mxlen == 32) = {
   mseccfg = legalize_mseccfg(mseccfg, value @ mseccfg.bits[31 .. 0]);
   Ok(mseccfg.bits[63 .. 32])
 }
@@ -415,17 +415,17 @@ mapping clause csr_name_map = 0x31A  <-> "menvcfgh"
 mapping clause csr_name_map = 0x10A  <-> "senvcfg"
 
 function clause is_CSR_defined(0x30A) = currentlyEnabled(Ext_U) // menvcfg
-function clause is_CSR_defined(0x31A) = currentlyEnabled(Ext_U) & (xlen == 32) // menvcfgh
+function clause is_CSR_defined(0x31A) = currentlyEnabled(Ext_U) & (mxlen == 32) // menvcfgh
 function clause is_CSR_defined(0x10A) = currentlyEnabled(Ext_S) // senvcfg
 
-function clause read_CSR(0x30A) = menvcfg.bits[xlen - 1 .. 0]
-function clause read_CSR(0x31A if xlen == 32) = menvcfg.bits[63 .. 32]
-function clause read_CSR(0x10A) = senvcfg.bits[xlen - 1 .. 0]
+function clause read_CSR(0x30A) = menvcfg.bits[mxlen - 1 .. 0]
+function clause read_CSR(0x31A if mxlen == 32) = menvcfg.bits[63 .. 32]
+function clause read_CSR(0x10A) = senvcfg.bits[mxlen - 1 .. 0]
 
-function clause write_CSR((0x30A, value) if xlen == 32) = { menvcfg = legalize_menvcfg(menvcfg, menvcfg.bits[63 .. 32] @ value); Ok(menvcfg.bits[31 .. 0]) }
-function clause write_CSR((0x30A, value) if xlen == 64) = { menvcfg = legalize_menvcfg(menvcfg, value); Ok(menvcfg.bits) }
-function clause write_CSR((0x31A, value) if xlen == 32) = { menvcfg = legalize_menvcfg(menvcfg, value @ menvcfg.bits[31 .. 0]); Ok(menvcfg.bits[63 .. 32]) }
-function clause write_CSR(0x10A, value) = { senvcfg = legalize_senvcfg(senvcfg, zero_extend(value)); Ok(senvcfg.bits[xlen - 1 .. 0]) }
+function clause write_CSR((0x30A, value) if mxlen == 32) = { menvcfg = legalize_menvcfg(menvcfg, menvcfg.bits[63 .. 32] @ value); Ok(menvcfg.bits[31 .. 0]) }
+function clause write_CSR((0x30A, value) if mxlen == 64) = { menvcfg = legalize_menvcfg(menvcfg, value); Ok(menvcfg.bits) }
+function clause write_CSR((0x31A, value) if mxlen == 32) = { menvcfg = legalize_menvcfg(menvcfg, value @ menvcfg.bits[31 .. 0]); Ok(menvcfg.bits[63 .. 32]) }
+function clause write_CSR(0x10A, value) = { senvcfg = legalize_senvcfg(senvcfg, zero_extend(value)); Ok(senvcfg.bits[mxlen - 1 .. 0]) }
 
 // Return whether or not FIOM is currently active, based on the current
 // privilege and the menvcfg/senvcfg settings. This means that I/O fences
@@ -520,20 +520,20 @@ mapping clause csr_name_map = 0x303  <-> "mideleg"
 function clause is_CSR_defined(0x304) = true // mie
 function clause is_CSR_defined(0x344) = true // mip
 function clause is_CSR_defined(0x302) = currentlyEnabled(Ext_S) // medeleg
-function clause is_CSR_defined(0x312) = currentlyEnabled(Ext_S) & xlen == 32 // medelegh
+function clause is_CSR_defined(0x312) = currentlyEnabled(Ext_S) & mxlen == 32 // medelegh
 function clause is_CSR_defined(0x303) = currentlyEnabled(Ext_S) // mideleg
 
 function clause read_CSR(0x304) = mie.bits
 function clause read_CSR(0x344) = mip.bits
-function clause read_CSR(0x302) = medeleg.bits[xlen - 1 .. 0]
-function clause read_CSR(0x312 if xlen == 32) = medeleg.bits[63 .. 32]
+function clause read_CSR(0x302) = medeleg.bits[mxlen - 1 .. 0]
+function clause read_CSR(0x312 if mxlen == 32) = medeleg.bits[63 .. 32]
 function clause read_CSR(0x303) = mideleg.bits
 
 function clause write_CSR(0x304, value) = { mie = legalize_mie(mie, value); Ok(mie.bits) }
 function clause write_CSR(0x344, value) = { mip = legalize_mip(mip, value); Ok(mip.bits) }
-function clause write_CSR((0x302, value) if xlen == 64) = { medeleg = legalize_medeleg(medeleg, value); Ok(medeleg.bits) }
-function clause write_CSR((0x302, value) if xlen == 32) = { medeleg = legalize_medeleg(medeleg, medeleg.bits[63 .. 32] @ value); Ok(medeleg.bits[31 .. 0]) }
-function clause write_CSR((0x312, value) if xlen == 32) = { medeleg = legalize_medeleg(medeleg, value @ medeleg.bits[31 .. 0]); Ok(medeleg.bits[63 .. 32]) }
+function clause write_CSR((0x302, value) if mxlen == 64) = { medeleg = legalize_medeleg(medeleg, value); Ok(medeleg.bits) }
+function clause write_CSR((0x302, value) if mxlen == 32) = { medeleg = legalize_medeleg(medeleg, medeleg.bits[63 .. 32] @ value); Ok(medeleg.bits[31 .. 0]) }
+function clause write_CSR((0x312, value) if mxlen == 32) = { medeleg = legalize_medeleg(medeleg, value @ medeleg.bits[31 .. 0]); Ok(medeleg.bits[63 .. 32]) }
 function clause write_CSR(0x303, value) = { mideleg = legalize_mideleg(mideleg, value); Ok(mideleg.bits) }
 
 /* registers for trap handling */
@@ -775,8 +775,8 @@ function legalize_sstatus(m : Mstatus, v : xlenbits) -> Mstatus = {
 
 mapping clause csr_name_map = 0x100  <-> "sstatus"
 function clause is_CSR_defined(0x100) = currentlyEnabled(Ext_S) // sstatus
-function clause read_CSR(0x100) = lower_mstatus(mstatus).bits[xlen - 1 .. 0]
-function clause write_CSR(0x100, value) = { mstatus = legalize_sstatus(mstatus, value); Ok(lower_mstatus(mstatus).bits[xlen - 1 .. 0]) }
+function clause read_CSR(0x100) = lower_mstatus(mstatus).bits[mxlen - 1 .. 0]
+function clause write_CSR(0x100, value) = { mstatus = legalize_sstatus(mstatus, value); Ok(lower_mstatus(mstatus).bits[mxlen - 1 .. 0]) }
 
 
 bitfield Sinterrupts : xlenbits = {
@@ -896,7 +896,7 @@ function legalize_satp(
   prev_value : xlenbits,
   written_value : xlenbits,
 ) -> xlenbits = {
-  if xlen == 32 then {
+  if mxlen == 32 then {
     let s = Mk_Satp32(written_value);
     match satpMode_of_bits(arch, 0b000 @ s[Mode]) {
       None()  => prev_value,
@@ -906,7 +906,7 @@ function legalize_satp(
         _ => prev_value,
       }
     }
-  } else if xlen == 64 then {
+  } else if mxlen == 64 then {
     let s = Mk_Satp64(written_value);
     match satpMode_of_bits(arch, s[Mode]) {
       None()  => prev_value,
@@ -919,7 +919,7 @@ function legalize_satp(
       }
     }
   } else {
-    internal_error(__FILE__, __LINE__, "Unsupported xlen" ^ dec_str(xlen))
+    internal_error(__FILE__, __LINE__, "Unsupported mxlen" ^ dec_str(mxlen))
   }
 }
 

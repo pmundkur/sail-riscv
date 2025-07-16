@@ -14,7 +14,7 @@ union clause instruction = RORIW : (bits(5), regidx, regidx)
 
 mapping clause encdec = RORIW(shamt, rs1, rd)
   <-> 0b0110000 @ shamt @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0011011
-  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & xlen == 64
+  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & mxlen == 64
 
 mapping clause assembly = RORIW(shamt, rs1, rd)
   <-> "roriw" ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1) ^ sep() ^ hex_bits_5(shamt)
@@ -29,7 +29,7 @@ union clause instruction = RORI : (bits(6), regidx, regidx)
 
 mapping clause encdec = RORI(shamt, rs1, rd)
   <-> 0b011000 @ shamt @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0010011
-  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & (xlen == 64 | shamt[5] == bitzero)
+  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & (mxlen == 64 | shamt[5] == bitzero)
 
 mapping clause assembly = RORI(shamt, rs1, rd)
   <-> "rori" ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1) ^ sep() ^ hex_bits_6(shamt)
@@ -45,11 +45,11 @@ union clause instruction = ZBB_RTYPEW : (regidx, regidx, regidx, bropw_zbb)
 
 mapping clause encdec = ZBB_RTYPEW(rs2, rs1, rd, ROLW)
   <-> 0b0110000 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b001 @ encdec_reg(rd) @ 0b0111011
-  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & xlen == 64
+  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & mxlen == 64
 
 mapping clause encdec = ZBB_RTYPEW(rs2, rs1, rd, RORW)
   <-> 0b0110000 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0111011
-  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & xlen == 64
+  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & mxlen == 64
 
 mapping zbb_rtypew_mnemonic : bropw_zbb <-> string = {
   ROLW <-> "rolw",
@@ -155,11 +155,11 @@ mapping clause encdec = ZBB_EXTOP(rs1, rd, SEXTH)
 
 mapping clause encdec = ZBB_EXTOP(rs1, rd, ZEXTH)
   <-> 0b0000100 @ 0b00000 @ encdec_reg(rs1) @ 0b100 @ encdec_reg(rd) @ 0b0110011
-  when currentlyEnabled(Ext_Zbb) & xlen == 32
+  when currentlyEnabled(Ext_Zbb) & mxlen == 32
 
 mapping clause encdec = ZBB_EXTOP(rs1, rd, ZEXTH)
   <-> 0b0000100 @ 0b00000 @ encdec_reg(rs1) @ 0b100 @ encdec_reg(rd) @ 0b0111011
-  when currentlyEnabled(Ext_Zbb) & xlen == 64
+  when currentlyEnabled(Ext_Zbb) & mxlen == 64
 
 mapping zbb_extop_mnemonic : extop_zbb <-> string = {
   SEXTB <-> "sext.b",
@@ -186,11 +186,11 @@ union clause instruction = REV8 : (regidx, regidx)
 
 mapping clause encdec = REV8(rs1, rd)
   <-> 0b011010011000 @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0010011
-  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & xlen == 32
+  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & mxlen == 32
 
 mapping clause encdec = REV8(rs1, rd)
   <-> 0b011010111000 @ encdec_reg(rs1) @ 0b101 @ encdec_reg(rd) @ 0b0010011
-  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & xlen == 64
+  when (currentlyEnabled(Ext_Zbb) | currentlyEnabled(Ext_Zbkb)) & mxlen == 64
 
 mapping clause assembly = REV8(rs1, rd)
   <-> "rev8" ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1)
@@ -213,7 +213,7 @@ mapping clause assembly = ORCB(rs1, rd)
 function clause execute (ORCB(rs1, rd)) = {
   let rs1_val = X(rs1);
   var result : xlenbits = zeros();
-  foreach (i from 0 to (xlen - 8) by 8)
+  foreach (i from 0 to (mxlen - 8) by 8)
     result[(i + 7) .. i] = if rs1_val[(i + 7) .. i] == zeros()
                            then 0x00
                            else 0xFF;
@@ -241,7 +241,7 @@ union clause instruction = CPOPW : (regidx, regidx)
 
 mapping clause encdec = CPOPW(rs1, rd)
   <-> 0b011000000010 @ encdec_reg(rs1) @ 0b001 @ encdec_reg(rd) @ 0b0011011
-  when currentlyEnabled(Ext_Zbb) & xlen == 64
+  when currentlyEnabled(Ext_Zbb) & mxlen == 64
 
 mapping clause assembly = CPOPW(rs1, rd)
   <-> "cpopw" ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1)
@@ -271,7 +271,7 @@ union clause instruction = CLZW : (regidx, regidx)
 
 mapping clause encdec = CLZW(rs1, rd)
   <-> 0b011000000000 @ encdec_reg(rs1) @ 0b001 @ encdec_reg(rd) @ 0b0011011
-  when currentlyEnabled(Ext_Zbb) & xlen == 64
+  when currentlyEnabled(Ext_Zbb) & mxlen == 64
 
 mapping clause assembly = CLZW(rs1, rd)
   <-> "clzw" ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1)
@@ -301,7 +301,7 @@ union clause instruction = CTZW : (regidx, regidx)
 
 mapping clause encdec = CTZW(rs1, rd)
   <-> 0b011000000001 @ encdec_reg(rs1) @ 0b001 @ encdec_reg(rd) @ 0b0011011
-  when currentlyEnabled(Ext_Zbb) & xlen == 64
+  when currentlyEnabled(Ext_Zbb) & mxlen == 64
 
 mapping clause assembly = CTZW(rs1, rd)
   <-> "ctzw" ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1)

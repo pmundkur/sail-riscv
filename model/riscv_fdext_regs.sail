@@ -280,7 +280,7 @@ function rF_or_X_D(i) = {
   assert(hartSupports(Ext_F) != hartSupports(Ext_Zfinx));
   if   hartSupports(Ext_F)
   then F_D(i)
-  else if xlen >= 64
+  else if mxlen >= 64
   then X(fregidx_to_regidx(i))[63..0]
   else {
     let ridx = fregidx_to_regidx(i);
@@ -313,7 +313,7 @@ function wF_or_X_D(i, data) = {
   assert(hartSupports(Ext_F) != hartSupports(Ext_Zfinx));
   if   hartSupports(Ext_F)
   then F_D(i) = data
-  else if xlen >= 64
+  else if mxlen >= 64
   then X(fregidx_to_regidx(i)) = sign_extend(data)
   else {
     let ridx = fregidx_to_regidx(i);

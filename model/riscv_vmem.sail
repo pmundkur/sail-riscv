@@ -100,7 +100,7 @@ function pt_walk(
   // The assertion is required so Sail knows that we can't have a
   // pte_addr of 56 bits and physaddr of 34 bits (because you can't
   // use Sv39+ on RV32).
-  assert(sv_width == 32 | xlen == 64);
+  assert(sv_width == 32 | mxlen == 64);
   let pte_addr = Physaddr(zero_extend(pte_addr));
 
   // Read this-level PTE from mem (Step 2 of VATP)
@@ -189,7 +189,7 @@ function translationMode(priv : Privilege) -> SATPMode = {
     let mbits : satp_mode = match arch {
       RV64 => {
         // Can't have an effective architecture of RV64 on RV32.
-        assert(xlen >= 64);
+        assert(mxlen >= 64);
         Mk_Satp64(satp)[Mode]
       },
       RV32 => 0b000 @ Mk_Satp32(satp[31..0])[Mode],
@@ -340,14 +340,14 @@ function translate forall 'v, is_sv_mode('v) . (
   }
 }
 
-// SATP is represented in the model as an XLEN register (xlenbits), but it's
+// SATP is represented in the model as an MXLEN register (xlenbits), but it's
 // actually SXLEN. That means if we are using Sv39 (which is only available when
 // SXLEN is 32), then it must be a 32 bit register.
 function get_satp forall 'v, is_sv_mode('v). (
   sv_width : int('v)
 ) -> bits(if 'v == 32 then 32 else 64) = {
   // Cannot use Sv39+ on RV32.
-  assert('v == 32 | xlen == 64);
+  assert('v == 32 | mxlen == 64);
   if sv_width == 32 then satp[31 .. 0] else satp
 }
 
@@ -369,11 +369,11 @@ function translateAddr(
   // Sv39 -> 39, etc.
   let sv_width = satp_mode_width(mode);
 
-  // For Sv32 on RV64, satp is 32 bits (SXLEN), not XLEN.
+  // For Sv32 on RV64, satp is 32 bits (SXLEN), not MXLEN.
   let satp_sxlen = get_satp(sv_width);
 
   // Cannot use Sv39+ on RV32.
-  assert(sv_width == 32 | xlen == 64);
+  assert(sv_width == 32 | mxlen == 64);
 
   let svAddr = bits_of(vAddr)[sv_width - 1 .. 0];
   if bits_of(vAddr) != sign_extend(svAddr) then {

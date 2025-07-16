@@ -53,7 +53,7 @@ overload csr_write_callback = {csr_name_write_callback, csr_id_write_callback, c
 overload csr_read_callback = {csr_name_read_callback, csr_id_read_callback, csr_full_read_callback}
 
 function long_csr_write_callback(name : string, name_high : string, value : bits(64)) -> unit = {
-  csr_write_callback(name, value[xlen - 1 .. 0]);
-  if xlen == 32
+  csr_write_callback(name, value[mxlen - 1 .. 0]);
+  if mxlen == 32
   then csr_write_callback(name_high, value[63 .. 32]);
 }

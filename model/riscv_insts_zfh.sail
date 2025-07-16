@@ -541,19 +541,19 @@ mapping clause encdec = F_UN_RM_FF_TYPE_H(rs1, rm, rd, FCVT_D_H)
 
 mapping clause encdec = F_UN_RM_FX_TYPE_H(rs1, rm, rd, FCVT_L_H)
 <-> 0b110_0010 @ 0b00010 @ encdec_freg(rs1) @ encdec_rounding_mode (rm) @ encdec_reg(rd) @ 0b101_0011
-  when haveHalfFPU() & xlen >= 64
+  when haveHalfFPU() & mxlen >= 64
 
 mapping clause encdec = F_UN_RM_FX_TYPE_H(rs1, rm, rd, FCVT_LU_H)
 <-> 0b110_0010 @ 0b00011 @ encdec_freg(rs1) @ encdec_rounding_mode (rm) @ encdec_reg(rd) @ 0b101_0011
-  when haveHalfFPU() & xlen >= 64
+  when haveHalfFPU() & mxlen >= 64
 
 mapping clause encdec = F_UN_RM_XF_TYPE_H(rs1, rm, rd, FCVT_H_L)
 <-> 0b110_1010 @ 0b00010 @ encdec_reg(rs1) @ encdec_rounding_mode (rm) @ encdec_freg(rd) @ 0b101_0011
-  when haveHalfFPU() & xlen >= 64
+  when haveHalfFPU() & mxlen >= 64
 
 mapping clause encdec = F_UN_RM_XF_TYPE_H(rs1, rm, rd, FCVT_H_LU)
 <-> 0b110_1010 @ 0b00011 @ encdec_reg(rs1) @ encdec_rounding_mode (rm) @ encdec_freg(rd) @ 0b101_0011
-  when haveHalfFPU() & xlen >= 64
+  when haveHalfFPU() & mxlen >= 64
 
 /* Execution semantics ================================ */
 
@@ -693,7 +693,7 @@ function clause execute (F_UN_RM_FF_TYPE_H(rs1, rm, rd, FCVT_D_H)) = {
 }
 
 function clause execute (F_UN_RM_FX_TYPE_H(rs1, rm, rd, FCVT_L_H)) = {
-  assert(xlen >= 64);
+  assert(mxlen >= 64);
   let rs1_val_H = F_or_X_H(rs1);
   match (select_instr_or_fcsr_rm (rm)) {
     None() => Illegal_Instruction(),
@@ -709,7 +709,7 @@ function clause execute (F_UN_RM_FX_TYPE_H(rs1, rm, rd, FCVT_L_H)) = {
 }
 
 function clause execute (F_UN_RM_FX_TYPE_H(rs1, rm, rd, FCVT_LU_H)) = {
-  assert(xlen >= 64);
+  assert(mxlen >= 64);
   let rs1_val_H = F_or_X_H(rs1);
   match (select_instr_or_fcsr_rm (rm)) {
     None() => Illegal_Instruction(),
@@ -725,7 +725,7 @@ function clause execute (F_UN_RM_FX_TYPE_H(rs1, rm, rd, FCVT_LU_H)) = {
 }
 
 function clause execute (F_UN_RM_XF_TYPE_H(rs1, rm, rd, FCVT_H_L)) = {
-  assert(xlen >= 64);
+  assert(mxlen >= 64);
   let rs1_val_L = X(rs1)[63..0];
   match (select_instr_or_fcsr_rm (rm)) {
     None() => Illegal_Instruction(),
@@ -741,7 +741,7 @@ function clause execute (F_UN_RM_XF_TYPE_H(rs1, rm, rd, FCVT_H_L)) = {
 }
 
 function clause execute (F_UN_RM_XF_TYPE_H(rs1, rm, rd, FCVT_H_LU)) = {
-  assert(xlen >= 64);
+  assert(mxlen >= 64);
   let rs1_val_LU = X(rs1)[63..0];
   match (select_instr_or_fcsr_rm (rm)) {
     None() => Illegal_Instruction(),

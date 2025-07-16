@@ -30,7 +30,7 @@ type asidlen    : Int = if mxlen == 32 then 9 else 16
 // This saves typing `sizeof()` everywhere.
 let log2_mxlen = sizeof(log2_mxlen)
 let mxlen_bytes = sizeof(mxlen_bytes)
-let xlen = sizeof(mxlen)
+let mxlen = sizeof(mxlen)
 let asidlen = sizeof(asidlen)
 
 type xlenbits = bits(mxlen)

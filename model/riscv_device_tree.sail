@@ -8,10 +8,10 @@
 
 // Identifies the largest MMU address translation mode supported by this hart.
 function mmu_type() -> string = {
-  if xlen == 32 then {
+  if mxlen == 32 then {
     if hartSupports(Ext_Sv32) then "sv32" else "none"
   } else {
-    assert(xlen == 64);
+    assert(mxlen == 64);
     if hartSupports(Ext_Sv57) then "sv57"
     else if hartSupports(Ext_Sv48) then "sv48"
     else if hartSupports(Ext_Sv39) then "sv39"
@@ -25,7 +25,7 @@ function mmu_type() -> string = {
 
 // Generates the value for the "riscv,isa-base" property.
 function generate_isa_base() -> string = {
-  "rv" ^ dec_str(xlen) ^ "i"
+  "rv" ^ dec_str(mxlen) ^ "i"
 }
 
 // Generates an ISA string in the appropriate format.
@@ -87,7 +87,7 @@ function ext_wrap(ext : extension, fmt : ISA_Format) -> string = {
 
 function generate_isa_string(fmt : ISA_Format) -> string = {
   var isa_string : string = match fmt {
-    Canonical_Lowercase => "rv" ^ dec_str(xlen) ^ "i",
+    Canonical_Lowercase => "rv" ^ dec_str(mxlen) ^ "i",
     DeviceTree_ISA_Extensions => "\"i\"",
   };
 

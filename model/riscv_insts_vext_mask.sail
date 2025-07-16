@@ -113,7 +113,7 @@ function clause execute(VCPOP_M(vm, vs2, rd)) = {
     if (mask & vs2_val)[i] == bitone then count = count + 1;
   };
 
-  X(rd) = to_bits_unsafe(xlen, count);
+  X(rd) = to_bits_unsafe(mxlen, count);
   set_vstart(zeros());
   RETIRE_SUCCESS
 }
@@ -153,7 +153,7 @@ function clause execute(VFIRST_M(vm, vs2, rd)) = {
     };
   };
 
-  X(rd) = to_bits_unsafe(xlen, index);
+  X(rd) = to_bits_unsafe(mxlen, index);
   set_vstart(zeros());
   RETIRE_SUCCESS
 }

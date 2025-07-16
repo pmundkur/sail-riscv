@@ -18,7 +18,7 @@ function check_privs() -> bool = {
 // This logic will need to change once MXL/SXL/UXL can differ.
 function check_mmu_config() -> bool = {
   var valid : bool = true;
-  if xlen == 64 then {
+  if mxlen == 64 then {
     if not(hartSupports(Ext_S)) & (hartSupports(Ext_Sv57) | hartSupports(Ext_Sv48) | hartSupports(Ext_Sv39))
     then {
       valid = false;
@@ -40,7 +40,7 @@ function check_mmu_config() -> bool = {
       print_endline("Sv32 is enabled: Sv32 is not supported on RV64.");
     };
   } else {
-    assert(xlen == 32);
+    assert(mxlen == 32);
     if not(hartSupports(Ext_S)) & hartSupports(Ext_Sv32)
     then {
       valid = false;

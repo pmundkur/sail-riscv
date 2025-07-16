@@ -12,7 +12,7 @@ function clause currentlyEnabled(Ext_Zalrsc) = hartSupports(Ext_Zalrsc) | curren
 function lrsc_width_valid(size : word_width) -> bool = {
   match size {
     4 => true,
-    8 => xlen >= 64,
+    8 => mxlen >= 64,
     _ => false,
   }
 }

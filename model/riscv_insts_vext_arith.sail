@@ -681,7 +681,7 @@ mapping clause assembly = NXTYPE(funct6, vm, vs2, rs1, vd)
   <-> nxtype_mnemonic(funct6) ^ spc() ^ vreg_name(vd) ^ sep() ^ vreg_name(vs2) ^ sep() ^ reg_name(rs1) ^ maybe_vmask(vm)
 
 /* ***************** OPIVX (Vector Slide & Gather Instructions) ****************** */
-/* Slide and gather instructions extend rs1/imm to XLEN instead of SEW bits */
+/* Slide and gather instructions extend rs1/imm to MXLEN instead of SEW bits */
 union clause instruction = VXSG : (vxsgfunct6, bits(1), vregidx, regidx, vregidx)
 
 mapping encdec_vxsgfunct6 : vxsgfunct6 <-> bits(6) = {
@@ -1091,7 +1091,7 @@ mapping clause assembly = NITYPE(funct6, vm, vs2, simm, vd)
   <-> nitype_mnemonic(funct6) ^ spc() ^ vreg_name(vd) ^ sep() ^ vreg_name(vs2) ^ sep() ^ hex_bits_signed_5(simm) ^ maybe_vmask(vm)
 
 /* ***************** OPIVI (Vector Slide & Gather Instructions) ****************** */
-/* Slide and gather instructions extend rs1/imm to XLEN instead of SEW bits */
+/* Slide and gather instructions extend rs1/imm to MXLEN instead of SEW bits */
 union clause instruction = VISG : (visgfunct6, bits(1), vregidx, bits(5), vregidx)
 
 mapping encdec_visgfunct6 : visgfunct6 <-> bits(6) = {
@@ -1116,7 +1116,7 @@ function clause execute(VISG(funct6, vm, vs2, simm, vd)) = {
   let 'm = SEW;
 
   let vm_val  : bits('n)             = read_vmask(num_elem, vm, zvreg);
-  let imm_val : nat                  = unsigned(zero_extend(xlen, simm));
+  let imm_val : nat                  = unsigned(zero_extend(mxlen, simm));
   let vs2_val : vector('n, bits('m)) = read_vreg(num_elem, SEW, LMUL_pow, vs2);
   let vd_val  : vector('n, bits('m)) = read_vreg(num_elem, SEW, LMUL_pow, vd);
 
@@ -1812,8 +1812,8 @@ function clause execute(VMVXS(vs2, rd)) = {
   let 'm = SEW;
 
   let vs2_val : vector('n, bits('m)) = read_vreg(num_elem, SEW, 0, vs2);
-  X(rd) = if xlen < SEW then slice(vs2_val[0], 0, xlen)
-          else if xlen > SEW then sign_extend(vs2_val[0])
+  X(rd) = if mxlen < SEW then slice(vs2_val[0], 0, mxlen)
+          else if mxlen > SEW then sign_extend(vs2_val[0])
           else vs2_val[0];
   set_vstart(zeros());
 

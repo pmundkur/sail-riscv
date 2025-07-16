@@ -167,7 +167,7 @@ union clause instruction = C_ZEXT_W : (cregidx)
 
 mapping clause encdec_compressed = C_ZEXT_W(rsdc)
   <-> 0b100 @ 0b111 @ encdec_creg(rsdc) @ 0b11 @ 0b100 @ 0b01
-  when currentlyEnabled(Ext_Zcb) & currentlyEnabled(Ext_Zba) & xlen == 64
+  when currentlyEnabled(Ext_Zcb) & currentlyEnabled(Ext_Zba) & mxlen == 64
 
 mapping clause assembly = C_ZEXT_W(rsdc) <->
   "c.zext.w" ^ spc() ^ creg_name(rsdc)

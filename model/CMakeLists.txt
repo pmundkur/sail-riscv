@@ -373,7 +373,7 @@ foreach (variant IN ITEMS "" "smt" "rocq" "rmem" "lean" "lem" "isabelle")
                 # because Sail will convert counter-examples into nice Sail
                 # values instead of raw SMT2. Or it will try to at least.
                 # TODO: Currently we'll only test this on RV64D. It's quite
-                # slow and there aren't any properties that depend on XLEN/FLEN
+                # slow and there aren't any properties that depend on MXLEN/FLEN
                 # currently.
                 if (arch STREQUAL rv64d)
                     add_test(

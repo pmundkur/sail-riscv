@@ -14,7 +14,7 @@ union clause instruction = SLLIUW : (bits(6), regidx, regidx)
 
 mapping clause encdec = SLLIUW(shamt, rs1, rd)
   <-> 0b000010 @ shamt @ encdec_reg(rs1) @ 0b001 @ encdec_reg(rd) @ 0b0011011
-  when currentlyEnabled(Ext_Zba) & xlen == 64
+  when currentlyEnabled(Ext_Zba) & mxlen == 64
 
 mapping clause assembly = SLLIUW(shamt, rs1, rd)
   <-> "slli.uw" ^ spc() ^ reg_name(rd) ^ sep() ^ reg_name(rs1) ^ sep() ^ hex_bits_6(shamt)
@@ -30,12 +30,12 @@ union clause instruction = ZBA_RTYPEUW : (regidx, regidx, regidx, shamt_zba)
 // add.uw
 mapping clause encdec = ZBA_RTYPEUW(rs2, rs1, rd, 0b00)
   <-> 0b0000100 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b00 @ 0b0 @ encdec_reg(rd) @ 0b0111011
-  when currentlyEnabled(Ext_Zba) & xlen == 64
+  when currentlyEnabled(Ext_Zba) & mxlen == 64
 
 // sh#add.uw
 mapping clause encdec = ZBA_RTYPEUW(rs2, rs1, rd, shamt)
   <-> 0b0010000 @ encdec_reg(rs2) @ encdec_reg(rs1) @ shamt @ 0b0 @ encdec_reg(rd) @ 0b0111011
-  when currentlyEnabled(Ext_Zba) & xlen == 64
+  when currentlyEnabled(Ext_Zba) & mxlen == 64
 
 mapping zba_rtypeuw_mnemonic : shamt_zba <-> string = {
   0b00 <-> "add.uw",

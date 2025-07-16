@@ -173,7 +173,7 @@ function illegal_indexed_store(nf, EEW_index, EMUL_pow_index, EMUL_pow_data) = {
 /* Scalar register shaping */
 val get_scalar : forall 'm, 'm >= 8. (regidx, int('m)) -> bits('m)
 function get_scalar(rs1, SEW) = {
-  if SEW <= xlen then {
+  if SEW <= mxlen then {
     /* Least significant SEW bits */
     X(rs1)[SEW - 1 .. 0]
   } else {

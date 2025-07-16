@@ -231,8 +231,8 @@ function rX_pair_bits(i : regidx) -> bits(mxlen * 2) =
 
 function wX_pair_bits(i : regidx, data : bits(mxlen * 2)) -> unit =
   if i != zreg then {
-    X(i) = data[xlen - 1 .. 0];
-    X(i + 1) = data[xlen * 2 - 1 .. xlen];
+    X(i) = data[mxlen - 1 .. 0];
+    X(i + 1) = data[mxlen * 2 - 1 .. mxlen];
   }
 
 overload X_pair = {rX_pair_bits, wX_pair_bits}
