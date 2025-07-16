@@ -13,7 +13,7 @@
 type mxlen : Int = config base.mxlen
 constraint mxlen in {32, 64}
 
-type log2_xlen  : Int = if mxlen == 32 then 5 else 6
+type log2_mxlen  : Int = if mxlen == 32 then 5 else 6
 type xlen_bytes : Int = if mxlen == 32 then 4 else 8
 
 // TODO: Allow configuring a lower number of physical address bits.
@@ -28,7 +28,7 @@ type asidlen    : Int = if mxlen == 32 then 9 else 16
 // Variable versions of the above types. Variables and types
 // are disjoint in Sail so they are allowed to have the same name.
 // This saves typing `sizeof()` everywhere.
-let log2_xlen = sizeof(log2_xlen)
+let log2_mxlen = sizeof(log2_mxlen)
 let xlen_bytes = sizeof(xlen_bytes)
 let xlen = sizeof(mxlen)
 let asidlen = sizeof(asidlen)

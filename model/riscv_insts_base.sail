@@ -207,7 +207,7 @@ mapping clause encdec = SHIFTIOP(shamt, rs1, rd, SRAI)
   when xlen == 64 | shamt[5] == bitzero
 
 function clause execute (SHIFTIOP(shamt, rs1, rd, op)) = {
-  let shamt = shamt[log2_xlen - 1 .. 0];
+  let shamt = shamt[log2_mxlen - 1 .. 0];
   X(rd) = match op {
     SLLI => X(rs1) << shamt,
     SRLI => X(rs1) >> shamt,
@@ -247,10 +247,10 @@ function clause execute (RTYPE(rs2, rs1, rd, op)) = {
     AND  => X(rs1) & X(rs2),
     OR   => X(rs1) | X(rs2),
     XOR  => X(rs1) ^ X(rs2),
-    SLL  => X(rs1) << X(rs2)[log2_xlen - 1 .. 0],
-    SRL  => X(rs1) >> X(rs2)[log2_xlen - 1 .. 0],
+    SLL  => X(rs1) << X(rs2)[log2_mxlen - 1 .. 0],
+    SRL  => X(rs1) >> X(rs2)[log2_mxlen - 1 .. 0],
     SUB  => X(rs1) - X(rs2),
-    SRA  => shift_bits_right_arith(X(rs1), X(rs2)[log2_xlen - 1 .. 0]),
+    SRA  => shift_bits_right_arith(X(rs1), X(rs2)[log2_mxlen - 1 .. 0]),
   };
   RETIRE_SUCCESS
 }
