@@ -25,7 +25,7 @@ int main()
   trace_log = stdout;
 
   sail_config_set_string(DEFAULT_JSON);
-  sail_set_abstract_xlen();
+  sail_set_abstract_mxlen();
   sail_set_abstract_ext_d_supported();
   model_test();
 }

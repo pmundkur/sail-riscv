@@ -47,7 +47,7 @@ register cur_inst : xlenbits
 /* M-mode registers */
 
 bitfield Misa : xlenbits = {
-  MXL  : xlen - 1 .. xlen - 2,
+  MXL  : mxlen - 1 .. mxlen - 2,
 
   Z    : 25,
   Y    : 24,
@@ -159,7 +159,7 @@ function have_privLevel(priv : priv_level) -> bool =
   }
 
 bitfield Mstatus : bits(64) = {
-  SD   : xlen - 1,
+  SD   : mxlen - 1,
 
   //MDT  : 42,
   //MPELP: 41,
@@ -539,7 +539,7 @@ function clause write_CSR(0x303, value) = { mideleg = legalize_mideleg(mideleg, 
 /* registers for trap handling */
 
 bitfield Mtvec : xlenbits = {
-  Base : xlen - 1 .. 2,
+  Base : mxlen - 1 .. 2,
   Mode : 1 .. 0
 }
 register mtvec : Mtvec  /* Trap Vector */
@@ -554,8 +554,8 @@ function legalize_tvec(o : Mtvec, v : xlenbits) -> Mtvec = {
 }
 
 bitfield Mcause : xlenbits = {
-  IsInterrupt : xlen - 1,
-  Cause       : xlen - 2 .. 0
+  IsInterrupt : mxlen - 1,
+  Cause       : mxlen - 2 .. 0
 }
 register mcause : Mcause
 mapping clause csr_name_map = 0x342  <-> "mcause"
@@ -714,7 +714,7 @@ function clause read_CSR(0xF15) = mconfigptr
 
 /* sstatus reveals a subset of mstatus */
 bitfield Sstatus : bits(64) = {
-  SD    : xlen - 1,
+  SD    : mxlen - 1,
 
   UXL   : 33 .. 32,
 //  SDT   : 24,

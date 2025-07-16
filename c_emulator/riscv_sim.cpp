@@ -187,7 +187,7 @@ static void print_build_info(void)
 
 static bool is_32bit_model(void)
 {
-  return zxlen == 32;
+  return zmxlen == 32;
 }
 
 static void read_dtb(const char *path)
@@ -367,15 +367,15 @@ static int process_args(int argc, char **argv)
 void check_elf(bool is32bit)
 {
   if (is32bit) {
-    if (zxlen != 32) {
+    if (zmxlen != 32) {
       fprintf(stderr, "32-bit ELF not supported by RV%" PRIu64 " model.\n",
-              zxlen);
+              zmxlen);
       exit(EXIT_FAILURE);
     }
   } else {
-    if (zxlen != 64) {
+    if (zmxlen != 64) {
       fprintf(stderr, "64-bit ELF not supported by RV%" PRIu64 " model.\n",
-              zxlen);
+              zmxlen);
       exit(EXIT_FAILURE);
     }
   }
@@ -486,7 +486,7 @@ void init_sail(uint64_t elf_entry, const char *config_file)
 void reinit_sail(uint64_t elf_entry, const char *config_file)
 {
   model_fini();
-  sail_set_abstract_xlen();
+  sail_set_abstract_mxlen();
   sail_set_abstract_ext_d_supported();
   model_init();
   init_sail(elf_entry, config_file);
@@ -689,7 +689,7 @@ int main(int argc, char **argv)
 {
   int files_start = process_args(argc, argv);
 
-  sail_set_abstract_xlen();
+  sail_set_abstract_mxlen();
   sail_set_abstract_ext_d_supported();
   model_init();
 

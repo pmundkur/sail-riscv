@@ -233,8 +233,8 @@ let VLENB : xlenbits =
   to_bits(2 ^ VLEN_pow / 8)
 
 bitfield Vtype  : xlenbits = {
-  vill      : xlen - 1,
-  reserved  : xlen - 2 .. 8,
+  vill      : mxlen - 1,
+  reserved  : mxlen - 2 .. 8,
   vma       : 7,
   vta       : 6,
   vsew      : 5 .. 3,

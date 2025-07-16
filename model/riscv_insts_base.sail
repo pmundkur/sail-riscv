@@ -279,7 +279,7 @@ union clause instruction = LOAD : (bits(12), regidx, regidx, bool, word_width)
 function valid_load_encdec(width : word_width, is_unsigned : bool) -> bool =
   (width < xlen_bytes) | (not(is_unsigned) & width <= xlen_bytes)
 
-val extend_value : forall 'n, 0 < 'n <= xlen. (bool, bits('n)) -> xlenbits
+val extend_value : forall 'n, 0 < 'n <= mxlen. (bool, bits('n)) -> xlenbits
 function extend_value(is_unsigned, value) = if is_unsigned then zero_extend(value) else sign_extend(value)
 
 mapping clause encdec = LOAD(imm, rs1, rd, is_unsigned, width)

@@ -39,7 +39,7 @@ unit load_reservation(sbits addr)
 
 static mach_bits check_mask()
 {
-  return (zxlen == 32) ? 0x00000000FFFFFFFF : -1;
+  return (zmxlen == 32) ? 0x00000000FFFFFFFF : -1;
 }
 
 bool match_reservation(sbits addr)

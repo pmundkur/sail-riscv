@@ -13,7 +13,7 @@ void model_fini(void);
 
 // The generated header does not include these variables.
 // TODO: We should avoid accessing variables directly.
-extern uint64_t zxlen;
+extern uint64_t zmxlen;
 extern uint64_t zflen;
 extern uint64_t zphysaddrbits_len;
 extern uint64_t zVLEN;
