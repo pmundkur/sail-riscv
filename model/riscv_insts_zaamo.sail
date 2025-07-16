@@ -28,7 +28,7 @@ function amo_encoding_valid(width : word_width_wide, op : amoop, Regidx(rs2) : r
   &
   // Check the size and register alignment.
   (if width < 4 then currentlyEnabled(Ext_Zabha) else (
-    width <= xlen_bytes | (op == AMOCAS & width <= xlen_bytes * 2 & rs2[0] == bitzero & rd[0] == bitzero)
+    width <= mxlen_bytes | (op == AMOCAS & width <= mxlen_bytes * 2 & rs2[0] == bitzero & rd[0] == bitzero)
   ))
 
 /* ****************************************************************** */
@@ -58,7 +58,7 @@ function clause execute (AMO(op, aq, rl, rs2, rs1, width, rd)) = {
   let 'width = width;
 
   // This is checked during decoding.
-  assert(width <= xlen_bytes * 2);
+  assert(width <= mxlen_bytes * 2);
 
   /* Get the address, X(rs1) (no offset).
     * Some extensions perform additional checks on address validity.
@@ -74,7 +74,7 @@ function clause execute (AMO(op, aq, rl, rs2, rs1, width, rd)) = {
           // AMOCAS.D for RV32 and AMOCAS.Q for RV64 operate on a pair of
           // registers. When the first register of a register pair is
           // x0, then both halves of the pair read/write as zero.
-          let rs2_val : bits('width * 8) = if width <= xlen_bytes then trunc(X(rs2)) else trunc(X_pair(rs2));
+          let rs2_val : bits('width * 8) = if width <= mxlen_bytes then trunc(X(rs2)) else trunc(X_pair(rs2));
           match mem_write_ea(addr, width, aq & rl, rl, true) {
             Err(e) => Memory_Exception(vaddr, e),
             Ok(_) => {
@@ -97,16 +97,16 @@ function clause execute (AMO(op, aq, rl, rs2, rs1, width, rd)) = {
                     };
 
                   // All operations except CAS where loaded != X(rd) write their value back.
-                  if op == AMOCAS & loaded != (if width <= xlen_bytes then trunc(X(rd)) else trunc(X_pair(rd))) then {
+                  if op == AMOCAS & loaded != (if width <= mxlen_bytes then trunc(X(rd)) else trunc(X_pair(rd))) then {
                     // Compared, but didn't swap.
-                    if width <= xlen_bytes
+                    if width <= mxlen_bytes
                     then X(rd) = sign_extend(loaded)
                     else X_pair(rd) = sign_extend(loaded);
                     RETIRE_SUCCESS
                   } else {
                     match mem_write_value(addr, width, sign_extend(result), aq & rl, rl, true) {
                       Ok(true)  => {
-                        if width <= xlen_bytes
+                        if width <= mxlen_bytes
                         then X(rd) = sign_extend(loaded)
                         else X_pair(rd) = sign_extend(loaded);
                         RETIRE_SUCCESS

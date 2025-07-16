@@ -37,7 +37,7 @@ mapping clause encdec = LOADRES(aq, rl, rs1, size, rd)
 
 function clause execute(LOADRES(aq, rl, rs1, width, rd)) = {
   // This is checked during decoding.
-  assert(width <= xlen_bytes);
+  assert(width <= mxlen_bytes);
 
   match vmem_read(rs1, zeros(), width, Read(Data), aq, aq & rl, true) {
     Ok(data) => {
@@ -62,7 +62,7 @@ mapping clause encdec = STORECON(aq, rl, rs2, rs1, size, rd)
 /* NOTE: Currently, we only EA if address translation is successful. This may need revisiting. */
 function clause execute (STORECON(aq, rl, rs2, rs1, width, rd)) = {
   // This is checked during decoding.
-  assert(width <= xlen_bytes);
+  assert(width <= mxlen_bytes);
 
   /* normal non-rmem case
    * RMEM: SC is allowed to succeed (but might fail later)
