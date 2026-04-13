@@ -74,6 +74,12 @@ INSTRUCTION_LIMIT := 20000000
 sail: build/sail.dtb $(elf) $(SAIL_SIM)
 	$(SAIL_SIM) --show-times --inst-limit $(INSTRUCTION_LIMIT) --device-tree-blob build/sail.dtb $(elf)
 
+sail_without_pmp: build/sail.dtb $(elf) $(SAIL_SIM)
+	$(SAIL_SIM) --show-times --inst-limit $(INSTRUCTION_LIMIT) --config-override disable_pmp.json --device-tree-blob build/sail.dtb $(elf)
+
+sail_with_minimal_pmp: build/sail.dtb $(elf) $(SAIL_SIM)
+	$(SAIL_SIM) --show-times --inst-limit $(INSTRUCTION_LIMIT) --config-override minimal_pmp.json --device-tree-blob build/sail.dtb $(elf)
+
 # Run the profiler. This requires gperftools and pprof:
 #
 #     git clone https://github.com/gperftools/gperftools
