@@ -211,13 +211,15 @@ function within_pma_mag forall 'n, 0 < 'n <= max_mem_access. (pma : PMA, Physadd
   }
 
 // This function implements the check for the MAG PMA.
+// Returns the granule to use for splitting the access, or None()
+// if the access cannot be split.
 function mag_pma_check forall 'n, 0 < 'n <= max_mem_access.
 (
   pma     : PMA,
   access  : MemoryAccessType(mem_payload),
   paddr   : physaddr,
   width   : int('n)
-) -> result((Splittability, mag_size_exp), misaligned_exception) = {
+) -> result(option(mag_size_exp), misaligned_exception) = {
 
   let is_mag_applicable = is_mag_applicable_access(access, width);
 
@@ -226,7 +228,7 @@ function mag_pma_check forall 'n, 0 < 'n <= max_mem_access.
   // cannot be split if the access is within the MAG granule.
   if is_aligned_addr(paddr, width) |
      (is_mag_applicable & within_pma_mag(pma, paddr, width, is_vector_access(access)))
-  then return Ok((CannotSplit, 0));
+  then return Ok(None());
 
   // If we get here, the misaligned access cannot be done in a single
   // (i.e. unsplit) memory operation.  Either the access can be split,
@@ -240,9 +242,9 @@ function mag_pma_check forall 'n, 0 < 'n <= max_mem_access.
     // If there is no misaligned exception, then the misaligned access
     // may proceed without atomicity.
     None() =>  match (is_mag_applicable, mag_of_pma(pma, is_vector_access(access))) {
-      (true, Some(mag)) => Ok((CanSplit, mag)),
+      (true, Some(mag)) => Ok(Some(mag)),
       // If the MAG is not applicable, or no MAG is specified, use the global setting.
-      (_,    _        ) => Ok((CanSplit, sys_misaligned_allowed_within_exp)),
+      (_,    _        ) => Ok(Some(sys_misaligned_allowed_within_exp)),
     }
   }
 }

@@ -69,15 +69,18 @@ function prop_split_access(addr, width) = {
 // accesses is aligned.
 let sys_misaligned_byte_by_byte : bool = config memory.misaligned.byte_by_byte
 
-enum Splittability = {CanSplit, CannotSplit}
-
+// split_granule is the MAG granule to use for splitting;
+// None() means the access cannot be split.
 private val split_misaligned : forall 'width, 0 < 'width <= max_mem_access.
-  (physaddr, int('width), mag_size_exp, Splittability) -> {'n 'bytes, 'width == 'n * 'bytes & 'bytes > 0. (int('n), int('bytes))}
+  (physaddr, int('width), option(mag_size_exp)) -> {'n 'bytes, 'width == 'n * 'bytes & 'bytes > 0. (int('n), int('bytes))}
 
-function split_misaligned(Physaddr(addr), width, allowed_within_exp, splittable) = {
-  let do_not_split = splittable == CannotSplit |
-     (unsigned(addr) % width == 0) |
-     allowed_misaligned(addr[xlen -1 .. 0], width, allowed_within_exp);
+function split_misaligned(Physaddr(addr), width, split_granule) = {
+  let do_not_split : bool = match split_granule {
+    None() => true,
+    Some(allowed_within_exp) =>
+      (unsigned(addr) % width == 0) |
+      allowed_misaligned(addr[xlen -1 .. 0], width, allowed_within_exp),
+  };
 
   if do_not_split then (1, width)
   else if sys_misaligned_byte_by_byte then (width, 1)
