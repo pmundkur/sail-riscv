@@ -109,6 +109,7 @@ add_custom_command(
         --c-preserve tick_clock
         --c-preserve enable_htif
         --c-preserve set_pc_reset_address
+        --c-preserve write_CSR_value
         --c-preserve generate_dts
         --c-preserve config_is_valid
         --c-preserve dtb_within_configured_pma_memory

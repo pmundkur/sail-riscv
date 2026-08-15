@@ -388,6 +388,9 @@ void ModelImpl::init_sail(
   m_htif_tohost_address = htif_tohost_address;
 
   init_sail_impl();
+
+  // The model is now reset.  Re-initialize the CSR map.
+  m_csr_map = csrs();
 }
 
 void ModelImpl::init_sail_impl() {
@@ -409,6 +412,12 @@ void ModelImpl::reinit_sail() {
 
 void ModelImpl::model_init() {
   hart::Model::model_init();
+
+  // We need an initialized CSR map for `--print-gdb-target-xml`, so
+  // initialize it now.  At this point, the model is initialized but
+  // not yet reset. The reset might change the accessible CSRs, so the
+  // CSR map will be re-initialized again after `zinit_model()`.
+  m_csr_map = csrs();
 }
 
 void ModelImpl::model_fini() {
@@ -433,7 +442,7 @@ std::vector<MemoryRegion> ModelImpl::main_memory_regions() const {
   return regions;
 }
 
-std::vector<CSRInfo> ModelImpl::csrs() {
+std::map<uint64_t, CSRInfo> ModelImpl::csrs() {
   std::vector<std::pair<uint64_t, uint64_t>> addr_ranges = {
     // unprivileged
     {0x000, 0x01F},
@@ -450,7 +459,7 @@ std::vector<CSRInfo> ModelImpl::csrs() {
     {0xF00, 0xFFF},
   };
 
-  std::vector<CSRInfo> csrs;
+  std::map<uint64_t, CSRInfo> csrs;
 
   for (const auto &rng : addr_ranges) {
     for (auto addr = rng.first; addr <= rng.second; ++addr) {
@@ -461,10 +470,12 @@ std::vector<CSRInfo> ModelImpl::csrs() {
       sail_string name = nullptr;
       CREATE(sail_string)(&name);
       zcsr_name_map_forwards(&name, addr);
-      csrs.push_back({std::string(name), addr, writable});
+      auto width = xlen();
+      csrs[addr] = {std::string(name), addr, width, writable};
       KILL(sail_string)(&name);
     }
   }
+
   return csrs;
 }
 
@@ -567,6 +578,15 @@ uint64_t ModelImpl::fcsr() const {
   return zfcsr.zbits;
 }
 
+std::optional<uint64_t> ModelImpl::csr(uint64_t addr) {
+  auto ent = m_csr_map.find(addr);
+  if (ent == m_csr_map.end()) {
+    return std::nullopt;
+  }
+  sbits val = zread_CSR(addr);
+  return val.bits;
+}
+
 uint64_t ModelImpl::htif_exit_code() const {
   return zhtif_exit_code;
 }
@@ -624,4 +644,16 @@ void ModelImpl::set_fcsr(uint64_t val) {
 
   // Writing this CSR has side-effects: it dirties the FD context.
   zwrite_fcsr(frm, fflags);
+}
+
+bool ModelImpl::set_csr(uint64_t addr, uint64_t val) {
+  auto ent = m_csr_map.find(addr);
+  if (ent == m_csr_map.end() || !ent->second.writable) {
+    return false;
+  }
+  sbits value = {
+    .len = static_cast<uint64_t>(ent->second.width),
+    .bits = val,
+  };
+  return zwrite_CSR_value(addr, value);
 }

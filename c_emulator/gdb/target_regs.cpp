@@ -2,22 +2,31 @@
 #include "config_utils.h"
 #include "protocol_handler.h"
 #include "riscv_model_impl.h"
+
 #include <sstream>
 
-register_map get_register_map() {
+register_map get_register_map(ModelImpl &model) {
+  bool have_single = get_config_bool({"extensions", "F", "supported"});
+  int64_t pc_offset = 32; // TODO: handle the E base ISA
+  int64_t fpr_len = have_single ? 32 : 0;
   register_map map = {
-    // TODO: handle the E base ISA
-    .pc_offset = 32,
-    .fpr_offset = 33,
+    .pc_offset = pc_offset,
+    .fpr_len = fpr_len,
+    // this is undefined if `fpr_len` == 0.
+    .fpr_offset = pc_offset + 1,
     // `fcsr` could be duplicated, as under `fpu` and `csr`.  We put
     // it only in the fpu annex.
-    .fcsr_offset = 65,
+    // this is undefined if `fpr_len` == 0.
+    .fcsr_offset = pc_offset + 1 + fpr_len,
+    // CSRs
+    .csr_offset = pc_offset + 1 + (fpr_len > 0 ? fpr_len + 1 : 0),
+    .csrs = model.csr_map(),
   };
   return map;
 }
 
-std::string get_target_xml(const ModelImpl &model) {
-  const register_map map = get_register_map();
+std::string get_target_xml(ModelImpl &model) {
+  const register_map map = get_register_map(model);
   std::ostringstream xml;
 
   xml << R"(<?xml version="1.0"?>
@@ -56,11 +65,12 @@ std::string get_target_xml(const ModelImpl &model) {
   xml << "</feature>" << std::endl;
 
   ++regnum;
-  assert(regnum == map.fpr_offset);
 
   bool have_double = get_config_bool({"extensions", "D", "supported"});
   bool have_single = get_config_bool({"extensions", "F", "supported"});
   if (have_single) {
+    assert(regnum == map.fpr_offset);
+
     // The `org.gnu.gdb.riscv.fpu` feature is optional. If present, it
     // should contain registers `f0` through `f31`, `fflags`, `frm`,
     // and `fcsr`. As with the cpu feature, either the architectural
@@ -82,14 +92,39 @@ std::string get_target_xml(const ModelImpl &model) {
     for (int i = 0; i < 32; ++i) {
       xml << "  <reg name=\"f" << i << "\" bitsize=\"" << model.flen() << "\" type=\"" << fpu_type << "\"";
       if (i == 0) {
-        xml << " regnum = \"" << regnum << "\"";
+        xml << " regnum=\"" << regnum << "\"";
       }
       xml << "/>" << std::endl;
       ++regnum;
     }
+
+    assert(regnum == map.fcsr_offset);
     xml << "  <reg name=\"fcsr\" bitsize=\"32\" type=\"int\" regnum=\"" << regnum << "\"/>" << std::endl;
     xml << "</feature>" << std::endl;
+    ++regnum;
   }
+
+  // The ‘org.gnu.gdb.riscv.csr’ feature is optional. If present, it
+  // should contain all of the target’s standard CSRs. Standard CSRs
+  // are those defined in the RISC-V specification documents.
+  xml << R"(<feature name="org.gnu.gdb.riscv.csr">)" << std::endl;
+  auto csr_num = 0;
+  auto last_csr = map.csrs.size();
+  for (const auto &csr : map.csrs) {
+    // TODO: check whether the `group="csr"` attribute is needed.
+    xml << "  <reg name=\"" << csr.second.name << "\" bitsize=\"" << csr.second.width
+        << "\" type=\"int\" save-restore=\"no\"";
+    if (csr_num == 0) {
+      assert(regnum == map.csr_offset);
+    };
+    if (csr_num == 0 || csr_num + 1 == last_csr) {
+      xml << " regnum=\"" << regnum << "\"";
+    }
+    xml << "/>" << std::endl;
+    ++csr_num;
+    ++regnum;
+  }
+  xml << "</feature>" << std::endl;
 
   xml << "</target>" << std::endl;
   return xml.str();
@@ -119,7 +154,7 @@ void append_reg(std::ostringstream &buf, uint64_t val, int64_t width) {
 } // namespace
 
 std::string get_general_regs(protocol_handler &proto_handler) {
-  const register_map map = proto_handler.get_register_map();
+  const register_map &map = proto_handler.get_register_map();
   ModelImpl &model = proto_handler.get_model();
   std::ostringstream buf;
   buf << std::hex << std::setfill('0');
@@ -131,35 +166,41 @@ std::string get_general_regs(protocol_handler &proto_handler) {
   }
   append_reg(buf, model.pc(), int_width_bytes);
 
-  bool have_single = get_config_bool({"extensions", "F", "supported"});
-  if (have_single) {
+  if (map.fpr_len > 0) {
     int64_t float_width_bytes = model.flen() / 8;
-    for (int64_t i = 0; i < 32; ++i) {
+    for (int64_t i = 0; i < map.fpr_len; ++i) {
       const uint64_t val = model.freg(i);
       append_reg(buf, val, float_width_bytes);
     }
     append_reg(buf, model.fcsr(), 4);
+  }
+  for (const auto &csr : map.csrs) {
+    auto val = model.csr(csr.first);
+    if (val.has_value()) {
+      append_reg(buf, val.value(), model.xlen());
+    } else {
+      std::cerr << "Unable to read CSR " << csr.second.name << "." << std::endl;
+      append_reg(buf, 0, model.xlen());
+    }
   }
   return buf.str();
 }
 
 std::string get_register(protocol_handler &proto_handler, uint64_t regidx) {
   int64_t idx = static_cast<int64_t>(regidx);
-  const register_map map = proto_handler.get_register_map();
+  const register_map &map = proto_handler.get_register_map();
   ModelImpl &model = proto_handler.get_model();
 
   std::ostringstream buf;
   buf << std::hex << std::setfill('0');
   int64_t int_width_bytes = model.xlen() / 8;
 
-  bool have_single = get_config_bool({"extensions", "F", "supported"});
-
   if (0 <= idx && idx < map.pc_offset) {
     uint64_t val = model.xreg(idx);
     append_reg(buf, val, int_width_bytes);
   } else if (idx == map.pc_offset) {
     append_reg(buf, model.pc(), int_width_bytes);
-  } else if (have_single && map.fpr_offset <= idx && idx <= map.fcsr_offset) {
+  } else if (map.fpr_len > 0 && map.fpr_offset <= idx && idx <= map.fcsr_offset) {
     if (idx == map.fcsr_offset) {
       append_reg(buf, model.fcsr(), 4);
     } else {
@@ -167,6 +208,16 @@ std::string get_register(protocol_handler &proto_handler, uint64_t regidx) {
       const uint64_t val = model.freg(idx);
       int64_t float_width_bytes = model.flen() / 8;
       append_reg(buf, val, float_width_bytes);
+    }
+  } else if (map.csr_offset <= idx && idx < map.csr_offset + map.csrs.size()) {
+    idx -= map.csr_offset;
+    auto csr = map.csrs.at(idx);
+    auto val = model.csr(csr.addr);
+    if (val.has_value()) {
+      append_reg(buf, val.value(), csr.width);
+    } else {
+      std::cerr << "Unable to read CSR " << csr.name << "." << std::endl;
+      append_reg(buf, 0, csr.width);
     }
   } else {
     buf << "E.invalid_register_idx";
@@ -176,22 +227,24 @@ std::string get_register(protocol_handler &proto_handler, uint64_t regidx) {
 
 std::string set_register(protocol_handler &proto_handler, uint64_t regidx, uint64_t val) {
   int64_t reg = static_cast<int64_t>(regidx);
-  const register_map map = proto_handler.get_register_map();
+  const register_map &map = proto_handler.get_register_map();
   ModelImpl &model = proto_handler.get_model();
-
-  bool have_single = get_config_bool({"extensions", "F", "supported"});
 
   if (0 <= reg && reg < map.pc_offset) {
     model.set_xreg(reg, val);
   } else if (reg == map.pc_offset) {
     model.set_pc(val);
-  } else if (have_single && map.fpr_offset <= reg && reg <= map.fcsr_offset) {
+  } else if (map.fpr_len > 0 && map.fpr_offset <= reg && reg <= map.fcsr_offset) {
     if (reg == map.fcsr_offset) {
       model.set_fcsr(val);
     } else {
       reg -= map.fpr_offset;
       model.set_freg(reg, val);
     }
+  } else if (map.csr_offset <= reg && reg < map.csr_offset + map.csrs.size()) {
+    reg -= map.csr_offset;
+    auto csr = map.csrs.at(reg);
+    model.set_csr(csr.addr, val);
   } else {
     return "E.invalid_register_idx";
   }

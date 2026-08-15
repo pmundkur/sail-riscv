@@ -19,6 +19,8 @@ struct MemoryRegion {
 struct CSRInfo {
   std::string name;
   uint64_t addr;
+  // width is in bits.
+  int64_t width;
   bool writable;
 };
 
@@ -82,7 +84,9 @@ public:
   bool config_is_valid();
   bool dtb_within_configured_pma_memory(uint64_t addr, uint64_t size);
   std::vector<MemoryRegion> main_memory_regions() const;
-  std::vector<CSRInfo> csrs();
+  const std::map<uint64_t, CSRInfo> &csr_map() const {
+    return m_csr_map;
+  }
   std::string generate_dts();
   std::string generate_isa_string();
 
@@ -101,6 +105,7 @@ public:
   bool had_exception() const;
   uint64_t pc() const;
   uint64_t fcsr() const;
+  std::optional<uint64_t> csr(uint64_t addr);
 
   // These state accessors are not const due to the generated read
   // accessors not being marked const in hart::Model.
@@ -115,6 +120,7 @@ public:
   void set_freg(int64_t reg, uint64_t val);
   void set_pc(uint64_t val);
   void set_fcsr(uint64_t val);
+  bool set_csr(uint64_t addr, uint64_t val);
 
   // RVFI support
 
@@ -124,6 +130,7 @@ public:
 private:
   // Internal functions.
   void init_sail_impl();
+  std::map<uint64_t, CSRInfo> csrs();
 
   // These functions are called by the Sail code.
 
@@ -198,6 +205,7 @@ private:
   uint64_t m_elf_entry = 0;
   std::string m_config_file = {};
   std::optional<uint64_t> m_htif_tohost_address = {};
+  std::map<uint64_t, CSRInfo> m_csr_map;
 
   std::map<uint64_t, std::string> m_symbols;
   int m_term_fd = 1;

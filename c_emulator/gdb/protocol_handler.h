@@ -31,7 +31,7 @@ public:
       m_run_info{info},
       m_triggers{info} {
 
-    m_reg_map = get_register_map();
+    m_reg_map = ::get_register_map(m_model);
     m_insns_per_tick = get_config_uint64({"platform", "instructions_per_tick"});
   }
 
@@ -83,7 +83,7 @@ public:
   }
 
   // Access to the register map.
-  const register_map get_register_map() const {
+  const register_map &get_register_map() const {
     return m_reg_map;
   }
 

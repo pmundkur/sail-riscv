@@ -24,6 +24,13 @@ function clause write_CSR(csr, _) = {
 }
 end write_CSR
 
+// Helper for C++
+function write_CSR_value(csr : csreg, value : xlenbits) -> bool =
+  match write_CSR(csr, value) {
+    Ok(_)  => true,
+    Err(_) => false,
+  }
+
 // Implements the general HS-qualified rule from the H extension spec.
 // If an access fails in VS/VU mode but would succeed in HS mode, raise a
 // virtual instruction exception instead of an illegal instruction exception.
