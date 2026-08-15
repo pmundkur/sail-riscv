@@ -433,6 +433,41 @@ std::vector<MemoryRegion> ModelImpl::main_memory_regions() const {
   return regions;
 }
 
+std::vector<CSRInfo> ModelImpl::csrs() {
+  std::vector<std::pair<uint64_t, uint64_t>> addr_ranges = {
+    // unprivileged
+    {0x000, 0x01F},
+    {0xC00, 0xC2F},
+    {0xC80, 0xC9F},
+    // supervisor
+    {0x100, 0x1FF},
+    {0x5A0, 0x5BF},
+    {0xDA0, 0xDBF},
+    // machine
+    {0x300, 0x3FF},
+    {0x700, 0x7FF},
+    {0xB00, 0xBFF},
+    {0xF00, 0xFFF},
+  };
+
+  std::vector<CSRInfo> csrs;
+
+  for (const auto &rng : addr_ranges) {
+    for (auto addr = rng.first; addr <= rng.second; ++addr) {
+      if (!zis_CSR_accessible(addr, hart::zMachine, hart::zCSRRead)) {
+        continue;
+      }
+      bool writable = zis_CSR_accessible(addr, hart::zMachine, hart::zCSRWrite);
+      sail_string name = nullptr;
+      CREATE(sail_string)(&name);
+      zcsr_name_map_forwards(&name, addr);
+      csrs.push_back({std::string(name), addr, writable});
+      KILL(sail_string)(&name);
+    }
+  }
+  return csrs;
+}
+
 std::string ModelImpl::generate_dts() {
   char *c_dts = nullptr;
   zgenerate_dts(&c_dts, UNIT);
