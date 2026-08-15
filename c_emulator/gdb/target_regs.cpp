@@ -53,7 +53,7 @@ std::string get_target_xml(ModelImpl &model) {
   int regnum = 0;
   for (int i = 0; i < 32; ++i) {
     std::string typ = (i == 1) ? "code_ptr" : ((i == 2 || i == 3 || i == 4 || i == 8) ? "data_ptr" : "int");
-    xml << "  <reg name=\"x" << i << "\" bitsize=\"" << model.xlen() << "\" type=\"" << typ << "\"";
+    xml << "  <reg name=\"x" << i << "\" bitsize=\"" << model.xlen() << "\" type=\"" << typ << "\" group=\"general\"";
     if (i == 0) {
       xml << R"( regnum="0" )";
     }
@@ -61,7 +61,7 @@ std::string get_target_xml(ModelImpl &model) {
     ++regnum;
   }
   assert(regnum == map.pc_offset);
-  xml << "  <reg name=\"pc\" bitsize=\"" << model.xlen() << "\" type=\"code_ptr\"/>" << std::endl;
+  xml << "  <reg name=\"pc\" bitsize=\"" << model.xlen() << "\" type=\"code_ptr\" group=\"general\"/>" << std::endl;
   xml << "</feature>" << std::endl;
 
   ++regnum;
@@ -90,7 +90,8 @@ std::string get_target_xml(ModelImpl &model) {
       fpu_type = "ieee_single";
     }
     for (int i = 0; i < 32; ++i) {
-      xml << "  <reg name=\"f" << i << "\" bitsize=\"" << model.flen() << "\" type=\"" << fpu_type << "\"";
+      xml << "  <reg name=\"f" << i << "\" bitsize=\"" << model.flen() << "\" type=\"" << fpu_type
+          << "\" group=\"float\"";
       if (i == 0) {
         xml << " regnum=\"" << regnum << "\"";
       }
@@ -111,9 +112,8 @@ std::string get_target_xml(ModelImpl &model) {
   auto csr_num = 0;
   auto last_csr = map.csrs.size();
   for (const auto &csr : map.csrs) {
-    // TODO: check whether the `group="csr"` attribute is needed.
     xml << "  <reg name=\"" << csr.second.name << "\" bitsize=\"" << csr.second.width
-        << "\" type=\"int\" save-restore=\"no\"";
+        << "\" type=\"int\" group=\"csr\" save-restore=\"no\"";
     if (csr_num == 0) {
       assert(regnum == map.csr_offset);
     };
