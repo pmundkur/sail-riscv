@@ -253,20 +253,22 @@ function update_mip() -> unit = {
   let cur_mtime = get_mtime();
   let hart_mtimecmp = get_hart_mtimecmp();
 
-  mip[MSI] = machine_software_interrupt_pending();
+  var new_mip = mip;
+
+  new_mip[MSI] = machine_software_interrupt_pending();
 
   if platform_has_timer then {
-    mip[MTI] = bool_to_bit(hart_mtimecmp <=_u cur_mtime);
+    new_mip[MTI] = bool_to_bit(hart_mtimecmp <=_u cur_mtime);
 
     if currentlyEnabled(Ext_Sstc) & menvcfg[STCE] == 0b1 then {
-      mip[STI] = bool_to_bit(stimecmp <=_u cur_mtime);
+      new_mip[STI] = bool_to_bit(stimecmp <=_u cur_mtime);
     };
   };
 
   if currentlyEnabled(Ext_H) then {
     // `hvip` is the only `VSEI` source while `hgeip` is hardwired to zero. Once it is
     // drivable this also needs the `hgeip` bit selected by `hstatus.VGEIN`.
-    mip[VSEI] = hvip[VSEI];
+    new_mip[VSEI] = hvip[VSEI];
 
     // VSTI is the OR of hvip.VSTI and the hardware timer comparator.
     // The comparator result changes when mtime ticks, htimedelta changes,
@@ -279,11 +281,13 @@ function update_mip() -> unit = {
     // but not necessarily immediately. The interrupt remains posted until vstimecmp becomes greater
     // than (time + htimedelta), typically as a result of writing vstimecmp. The interrupt will be
     // taken based on the standard interrupt enable and delegation rules while V=1.
-    mip[VSTI] = hvip[VSTI]
-                | (if currentlyEnabled(Ext_Sstc) & read_henvcfg()[STCE] == 0b1 & platform_has_timer
-                   then bool_to_bit(vstimecmp <=_u (cur_mtime + htimedelta))
-                   else 0b0);
+    new_mip[VSTI] = hvip[VSTI]
+                    | (if currentlyEnabled(Ext_Sstc) & read_henvcfg()[STCE] == 0b1 & platform_has_timer
+                       then bool_to_bit(vstimecmp <=_u (cur_mtime + htimedelta))
+                       else 0b0);
   };
+
+  mip = supported_interrupts_mask(new_mip);
 
   if old_mip != mip.bits then {
     csr_write_callback("mip", read_mip(IncludePlatformInterrupts).bits);
@@ -329,7 +333,7 @@ private function legalize_hie(m : Minterrupts, v : xlenbits) -> Minterrupts = {
 // NOTE: Only VSSI is writable in hip (SGEI, VSEI, VSTI are read-only)
 private function legalize_hip(m : Minterrupts, v : xlenbits) -> Minterrupts = {
   let v = Mk_Minterrupts(v);
-  [m with VSSI = v[VSSI]]
+  supported_interrupts_mask([m with VSSI = v[VSSI]])
 }
 
 // NOTE: hvip.VSSI is an alias of mip.VSSI, so always read the
@@ -368,7 +372,10 @@ function clause write_CSR(0x645, value) = {
   hvip = legalize_hvip(hvip, value);
   // NOTE: `hvip.VSSI` is an alias of `mip.VSSI`, so always write the
   // actual value to `mip`.
-  mip[VSSI] = hvip[VSSI];
+  var new_mip = mip;
+  new_mip[VSSI] = hvip[VSSI];
+  mip = supported_interrupts_mask(new_mip);
+  hvip[VSSI] = mip[VSSI];
 
   Ok(hvip.bits)
 }
@@ -495,7 +502,7 @@ private function legalize_sip(m : Minterrupts, d : Minterrupts, v : xlenbits) ->
 // Returns new mip from previous mip (m) and the written vsip (v) as delegated by hideleg (d)
 private function legalize_vsip(m : Minterrupts, d : Minterrupts, v : xlenbits) -> Minterrupts = {
   let v = Mk_Minterrupts(v);
-  [m with VSSI = v[SSI] & d[VSSI]]
+  supported_interrupts_mask([m with VSSI = v[SSI] & d[VSSI]])
 }
 
 function read_sip(read_type : XipReadType) -> Sinterrupts = {
@@ -505,9 +512,11 @@ function read_sip(read_type : XipReadType) -> Sinterrupts = {
 }
 
 function write_sip(value : xlenbits) -> unit = {
-  mip = if inVirtualPrivilege()
-  then legalize_vsip(mip, hideleg, value)
-  else legalize_sip(mip, mideleg, value);
+  mip = supported_interrupts_mask(
+    if inVirtualPrivilege()
+    then legalize_vsip(mip, hideleg, value)
+    else legalize_sip(mip, mideleg, value)
+  );
 }
 
 mapping clause csr_name_map = 0x144  <-> "sip"
