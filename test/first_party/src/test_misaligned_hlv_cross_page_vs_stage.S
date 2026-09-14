@@ -1,0 +1,146 @@
+#include "common/encoding.h"
+
+# Tests a misaligned HLV load that crosses a page boundary where the first stage
+# is mapped but the second page is unmapped at VS-stage. A correct implementation
+# splits the access and translates each page separately, taking a load page fault
+# on the second page at VS-Stage. A faulty implementation translates only the base
+# address and performs the whole load at once, so the fault is missed.
+
+#if __riscv_xlen == 32
+#define PAGE_A    0xBFC00000
+#define VPN_IDX_A 767   # VPN[1] for 0xBFC00000 under Sv32
+#define VPN_IDX_B 768   # VPN[1] for 0xC0000000
+#define PTE_SHIFT 2     # 4-byte PTEs
+#else
+#define PAGE_A     0x80000000
+#define VPN_IDX_A  2     # VPN[2] for 0x80000000 under Sv39
+#define VPN_IDX_B  3     # VPN[2] for 0xC0000000
+#define PTE_SHIFT  3     # 8-byte PTEs
+#endif
+
+#define PAGE_B     0xC0000000
+#define LOAD_FROM  0xBFFFFFFE
+
+.global main
+main:
+  la t0, fail
+  csrw mtvec, t0
+
+# Set up the VS-stage page table.
+# Map only PAGE_A as an identity page while PAGE_B remains unmapped.
+vs_pt_init:
+  li t0, PAGE_A
+  srl t0, t0, RISCV_PGSHIFT - PTE_PPN_SHIFT
+  ori t0, t0, PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D
+  la t1, vspt_0
+  li t2, VPN_IDX_A
+  sll t2, t2, PTE_SHIFT
+  add t1, t1, t2
+  sw t0, 0(t1)
+
+init_vsatp:
+#if __riscv_xlen == 64
+  li t0, (SATP_MODE & ~(SATP_MODE<<1)) * SATP_MODE_SV39
+#else
+  li t0, SATP32_MODE * SATP_MODE_SV32
+#endif
+  la t1, vspt_0
+  srl t1, t1, RISCV_PGSHIFT
+  or t1, t1, t0
+  csrw vsatp, t1
+  hfence.vvma
+
+# Set up G-stage page table. Map only PAGE_A as an identity page while PAGE_B
+# remains unmapped. This test does not need to map PAGE_B, since the fault is expected
+# to occur during VS-stage. However, we keep PAGE_A mapped in case a faulty implementation
+# does not break up the memory access and raises no exception.
+# For RV32, the memory region containing vstp_0 also
+# needs to be mapped in order to perform a successful G-stage walk.
+guest_pt_init:
+  li t0, PAGE_A
+  srl t0, t0, RISCV_PGSHIFT - PTE_PPN_SHIFT
+  ori t0, t0, PTE_V | PTE_R | PTE_W | PTE_X | PTE_U | PTE_A | PTE_D
+  la t1, gpt_0
+  li t2, VPN_IDX_A
+  sll t2, t2, PTE_SHIFT
+  add t1, t1, t2
+  sw t0, 0(t1)
+
+#if __riscv_xlen == 32
+  # Sv32 has no gigapage, so PAGE_A no longer covers vspt_0 for RV32.
+  # Map it separately or the G-stage walk of the VS page table fails.
+  la t0, vspt_0
+  srli t2, t0, RISCV_PGSHIFT + RISCV_PGLEVEL_BITS   # VPN[1] index for vspt_0's megapage
+  slli t0, t2, RISCV_PGSHIFT + RISCV_PGLEVEL_BITS   # round t0 down to the megapage base
+  srl t0, t0, RISCV_PGSHIFT - PTE_PPN_SHIFT
+  ori t0, t0, PTE_V | PTE_R | PTE_W | PTE_X | PTE_U | PTE_A | PTE_D
+  la t1, gpt_0
+  sll t2, t2, PTE_SHIFT
+  add t1, t1, t2
+  sw t0, 0(t1)
+#endif
+
+init_hgatp:
+#if __riscv_xlen == 64
+  li t0, (HGATP64_MODE & ~(HGATP64_MODE<<1)) * HGATP_MODE_SV39X4
+#else
+  li t0, HGATP32_MODE * HGATP_MODE_SV32X4
+#endif
+  la t1, gpt_0
+  srl t1, t1, RISCV_PGSHIFT
+  or t1, t1, t0
+  csrw hgatp, t1
+  hfence.gvma
+
+hstatus_init:
+  li t0, HSTATUS_SPVP
+  csrs hstatus, t0
+
+  la t0, check_fault
+  csrw mtvec, t0
+
+  li t0, LOAD_FROM
+  # Perform a load crossing a page boundary.
+  # NOTE: Replace HLV with HSV for testing stores
+  hlv.w t2, 0(t0)
+
+  j fail # A faulty implementation reaches here and raises no fault
+
+.align 4
+check_fault:
+  la t0, fail
+  csrw mtvec, t0
+
+  # VS-stage fault on the page B half.
+  csrr t0, mcause
+  # NOTE: Replace CAUSE_LOAD_PAGE_FAULT with CAUSE_STORE_PAGE_FAULT for testing stores
+  li t1, CAUSE_LOAD_PAGE_FAULT
+  bne t0, t1, fail
+
+  # mtval = faulting GVA, in page B.
+  csrr t0, mtval
+  li t1, PAGE_B
+  bne t0, t1, fail
+
+  # No G-stage involvement, so mtval2 must be 0.
+  csrr t0, mtval2
+  bne t0, x0, fail
+
+  j pass
+
+.align 4
+fail:
+  li a0, 1
+  ret
+
+pass:
+  li a0, 0
+  ret
+
+.bss
+
+.align 12
+vspt_0: .fill 4096, 1, 0 # VS-stage root page table
+
+.align 14
+gpt_0: .fill 16384, 1, 0 # G-stage root page table
