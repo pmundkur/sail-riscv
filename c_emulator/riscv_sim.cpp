@@ -806,14 +806,7 @@ InitResult init_model(
   if (opts.config_print_rvvi_text) {
     // Fall back to stdout if no trace-output file was specified.
     FILE *rvvi_log = run_info.trace_log != stdout ? run_info.trace_log : stdout;
-    model.register_callback(
-      std::make_shared<rvvi_text_callbacks>(
-        rvvi_log,
-        static_cast<uint64_t>(model.xlen()),
-        model.has_float_registers(),
-        model.has_vector_registers()
-      )
-    );
+    model.register_callback(std::make_shared<rvvi_text_callbacks>(rvvi_log));
   }
 
   if (!opts.dtb_file.empty()) {
