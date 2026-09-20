@@ -11,6 +11,7 @@ class Model;
 struct zMemoryAccessTypezIEmem_payloadz5zK;
 struct zPTW_Error;
 struct zz5vecz8z5unionz0zzoptionzzIRTLB_EntryzzKz9;
+struct zExceptionContext;
 
 enum zPrivilege : int;
 enum zTranslationStage : int;
@@ -29,11 +30,23 @@ enum zEvent : int;
 
 class PlatformInterface {
 public:
-  virtual unit fetch_callback(sbits opcode);
+  virtual unit fetch_callback(sbits pc, sbits opcode);
 
-  virtual unit mem_write_callback(const char *type, sbits paddr, int64_t width, lbits value);
+  virtual unit mem_write_callback(
+    hart::zPrivilege privilege,
+    hart::zMemoryAccessTypezIEmem_payloadz5zK access_type,
+    sbits paddr,
+    int64_t width,
+    lbits value
+  );
 
-  virtual unit mem_read_callback(const char *type, sbits paddr, int64_t width, lbits value);
+  virtual unit mem_read_callback(
+    hart::zPrivilege privilege,
+    hart::zMemoryAccessTypezIEmem_payloadz5zK access_type,
+    sbits paddr,
+    int64_t width,
+    lbits value
+  );
 
   virtual unit mem_exception_callback(sbits paddr, uint64_t num_of_exception);
 
@@ -51,7 +64,9 @@ public:
 
   virtual unit redirect_callback(sbits new_pc);
 
-  virtual unit trap_callback(bool is_interrupt, fbits cause);
+  virtual unit interrupt_callback(fbits cause);
+  virtual unit exception_callback(fbits cause, hart::zExceptionContext ctx);
+
   virtual unit xret_callback(bool is_mret);
   virtual unit instret_callback(unit);
 
@@ -75,10 +90,32 @@ public:
     sbits pte_addr
   );
 
+  virtual unit address_translation_start_callback(
+    hart::zTranslationStage stage,
+    hart::zPrivilege privilege,
+    sbits vaddr,
+    hart::zMemoryAccessTypezIEmem_payloadz5zK access,
+    int64_t width
+  );
+
+  virtual unit address_translated_callback(
+    hart::zTranslationStage stage,
+    sbits vaddr,
+    sbits paddr,
+    hart::zMemoryAccessTypezIEmem_payloadz5zK access
+  );
+
   virtual unit tlb_add_callback(hart::zz5vecz8z5unionz0zzoptionzzIRTLB_EntryzzKz9 tlb, uint64_t index);
   virtual unit tlb_flush_begin_callback(unit);
   virtual unit tlb_flush_callback(uint64_t index);
   virtual unit tlb_flush_end_callback(hart::zz5vecz8z5unionz0zzoptionzzIRTLB_EntryzzKz9 tlb);
+  virtual unit tlb_hit_callback(
+    hart::zTranslationStage stage,
+    int64_t level,
+    sbits pte_addr,
+    uint64_t pte,
+    int64_t index
+  );
 
   // Events
   virtual bool validate_event_selectors(unit);

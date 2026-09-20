@@ -27,6 +27,7 @@ private struct TLB_Entry = {
   stage      : TranslationStage,   // Address Translation Stage
   global     : bool,               // global translation
   vpn        : bits(tlb_vpn_bits), // Virtual Page Number. SvXX - 12 bits.
+  level      : range(0, 4),        // Page-table level
   levelMask  : bits(tlb_vpn_bits), // Mask for superpages. The lowest (level * level_bits) bits are 1s.
   ppn        : bits(tlb_ppn_bits), // Physical Page Number, 22 (Sv32), or 44 (Sv39+) bits.
   pte        : bits(64),           // PTE. This is only 32 bits for Sv32 so we zero extend.
@@ -83,17 +84,20 @@ type tlb_index_range = range(0, num_tlb_entries - 1)
 
 private register tlb : vector(num_tlb_entries, option(TLB_Entry)) = vector_init(None())
 
-val tlb_add_callback = pure {cpp: "tlb_add_callback"} : (vector(num_tlb_entries, option(TLB_Entry)), range(0, num_tlb_entries)) -> unit
+val tlb_add_callback = pure {cpp: "tlb_add_callback"} : (vector(num_tlb_entries, option(TLB_Entry)), tlb_index_range) -> unit
 function tlb_add_callback(_) = ()
 
 val tlb_flush_begin_callback = pure {cpp: "tlb_flush_begin_callback"} : unit -> unit
 function tlb_flush_begin_callback(_) = ()
 
-val tlb_flush_callback = pure {cpp: "tlb_flush_callback"} : (range(0, num_tlb_entries)) -> unit
+val tlb_flush_callback = pure {cpp: "tlb_flush_callback"} : (tlb_index_range) -> unit
 function tlb_flush_callback(_) = ()
 
 val tlb_flush_end_callback = pure {cpp: "tlb_flush_end_callback"} : (vector(num_tlb_entries, option(TLB_Entry))) -> unit
 function tlb_flush_end_callback(_) = ()
+
+val tlb_hit_callback = pure {cpp: "tlb_hit_callback"} : (TranslationStage, /* level */ range(0, 4), /* pte_addr */ physaddrbits, /* pte */ bits(64), tlb_index_range) -> unit
+function tlb_hit_callback(_) = ()
 
 // Indexed by the lowest bits of the VPN XORed with the translation stage,
 // to avoid collisions between VS-stage and G-stage entries for the same VPN.
@@ -213,6 +217,7 @@ function add_to_TLB forall 'v, is_sv_or_svx4_mode('v) . (
                                  global    = global,
                                  pte       = zero_extend(pte),
                                  pteAddr   = pteAddr,
+                                 level     = level,
                                  levelMask = zero_extend(levelMask),
                                  // Zero-extend unsigned G-stage GPAs, sign-extend canonical VS/S-stage VA's.
                                  vpn       = if stage == G_Stage then zero_extend(vpn) else sign_extend(vpn),
