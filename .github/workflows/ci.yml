@@ -88,7 +88,7 @@ jobs:
             -DENABLE_RISCV_VECTOR_TESTS_V64_E64=TRUE \
             -DENABLE_RISCV_VECTOR_TESTS_V128_E32=TRUE \
             -DENABLE_LTO=TRUE \
-            -DENABLE_CLANG_TIDY=${{ matrix.clang_tidy }} \
+            -DENABLE_CLANG_TIDY=${{ matrix.run_all_steps }} \
             $CLANG_FLAG
           ninja -C build all generated_sail_riscv_docs generated_smt_rv64d generated_smt_rv32d
 
