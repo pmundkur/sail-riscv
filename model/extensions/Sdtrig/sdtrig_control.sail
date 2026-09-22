@@ -161,11 +161,18 @@ function find_highest_priority_pending_trigger(priv : Privilege) -> option((Trig
       T_disabled(_) => (),
       T_icount(t) =>
         // icount triggers fire in a mode where the trigger is enabled.
-        if t.pending & priv_match_icount(t, priv, t.action) then return Some(t.action, i, zeros()),
-      T_itrigger(t) =>
-        if t.hit & is_some(t.match_val) & get_reentrancy_control(t.action, priv) then return Some(t.action, i, zeros()),
-      T_etrigger(t) =>
-        if t.hit & is_some(t.match_val) & get_reentrancy_control(t.action, priv) then return Some(t.action, i, zeros()),
+        if t.pending & priv_match_icount(t, priv, t.action)
+        then return Some(t.action, i, zeros()),
+      T_itrigger(t) => {
+        if t.hit & is_some(t.match_val) & get_reentrancy_control(t.action, priv)
+        then return Some(t.action, i, zeros());
+        triggers[i] = T_itrigger({t with match_val = None()});
+      },
+      T_etrigger(t) => {
+        if t.hit & is_some(t.match_val) & get_reentrancy_control(t.action, priv)
+        then return Some(t.action, i, zeros());
+        triggers[i] = T_etrigger({t with match_val = None()});
+      },
     }
   };
   None()
