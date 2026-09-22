@@ -141,45 +141,6 @@ function match_etrigger_triggers(priv : Privilege, exc : ExceptionType) -> unit 
   }
 }
 
-// Finds highest priority pending trigger.  This covers etrigger,
-// icount and itrigger triggers.  Since these are all of the same
-// priority, it uses the first one found.  It returns the index of the trigger,
-// the trigger action, and the tval to use for the TA_Breakpoint action.
-
-// TODO: Cover mcontrol6 `after (previous instruction)`
-// when mcontrol6 is added.
-// TODO: When TA_Enter_Debug when Sdext is supported and TA_Enter_Debug
-// and TA_Breakpoint actions are both pending, make both actions
-// take place.
-// TODO: Do not fire triggers in Debug Mode.
-
-type pending_trigger_info = (Trig_Action, trigger_index, xlenbits)
-
-function find_highest_priority_pending_trigger(priv : Privilege) -> option(pending_trigger_info) = {
-  if not(currentlyEnabled(Ext_Sdtrig)) then return None();
-
-  foreach (i from 0 to (sizeof(trigger_vector_length) - 1)) {
-    match triggers[i] {
-      T_disabled(_) => (),
-      T_icount(t) =>
-        // icount triggers fire in a mode where the trigger is enabled.
-        if t.pending & priv_match_icount(t, priv, t.action)
-        then return Some(t.action, i, zeros()),
-      T_itrigger(t) => {
-        if t.hit & is_some(t.match_val) & get_reentrancy_control(t.action, priv)
-        then return Some(t.action, i, zeros());
-        triggers[i] = T_itrigger({t with match_val = None()});
-      },
-      T_etrigger(t) => {
-        if t.hit & is_some(t.match_val) & get_reentrancy_control(t.action, priv)
-        then return Some(t.action, i, zeros());
-        triggers[i] = T_etrigger({t with match_val = None()});
-      },
-    }
-  };
-  None()
-}
-
 // firing
 
 function fire_trigger(idx : trigger_index) -> unit = {
@@ -203,6 +164,52 @@ function fire_trigger(idx : trigger_index) -> unit = {
   if get_config_print_trigger()
   then print_log("Fired " ^ trigger_name(t) ^ " at index #" ^ dec_str(idx) ^ " with action " ^ trigger_action_name(action));
   trigger_fire_callback(idx);
+}
+
+// Finds and fires the highest priority pending triggers.  This
+// currently covers etrigger, icount and itrigger triggers (which are
+// all of the same priority).  It returns the index and `tval` for the
+// last one, regardless of action. For the `TA_Enter_Debug` action,
+// the `tval` should not be used.
+
+type pending_trigger_info = (Trig_Action, trigger_index, xlenbits)
+
+function find_highest_priority_pending_trigger(priv : Privilege) -> option(pending_trigger_info) = {
+  if not(currentlyEnabled(Ext_Sdtrig)) then return None();
+  // TODO: Triggers do not fire while in Debug Mode.
+  // if (currentlyEnabled(Ext_Sdext)) then return None();
+
+  // TODO: Cover mcontrol6 `after (previous instruction)`
+  // when mcontrol6 is added.
+  // TODO: When TA_Enter_Debug when Sdext is supported and TA_Enter_Debug
+  // and TA_Breakpoint actions are both pending, make both actions
+  // take place.
+
+  var trig_info : option(pending_trigger_info) = None();
+
+  foreach (i from 0 to (sizeof(trigger_vector_length) - 1)) {
+    match triggers[i] {
+      T_disabled(_) => (),
+      T_icount(t) =>
+        // icount triggers fire in a mode where the trigger is enabled.
+        if t.pending & priv_match_icount(t, priv, t.action) then {
+          trig_info = Some(t.action, i, zeros());
+          fire_trigger(i);
+        },
+      T_itrigger(t) =>
+        if t.hit & is_some(t.match_val) & get_reentrancy_control(t.action, priv) then {
+          trig_info = Some(t.action, i, zeros());
+          fire_trigger(i);
+        },
+      T_etrigger(t) =>
+        if t.hit & is_some(t.match_val) & get_reentrancy_control(t.action, priv) then {
+          trig_info = Some(t.action, i, zeros());
+          fire_trigger(i);
+        },
+    }
+  };
+
+  trig_info
 }
 
 // update at the end of a step

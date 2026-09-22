@@ -252,10 +252,7 @@ function try_step(step_no : nat, exit_wait : bool) -> bool = {
   match step_val {
     Step_Pending_Trigger(action, idx, trigger_tval) => {
       match action {
-        TA_Breakpoint => {
-          fire_trigger(idx);
-          handle_exception(exception_context(E_Breakpoint(Brk_Hardware), trigger_tval))
-        },
+        TA_Breakpoint => handle_exception(exception_context(E_Breakpoint(Brk_Hardware), trigger_tval)),
         _ => internal_error(__FILE__, __LINE__, "Trigger action " ^ trigger_action_name(action) ^ " not supported."),
       }
     },
