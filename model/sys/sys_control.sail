@@ -309,6 +309,8 @@ function trap_handler(
 
       handle_trap_extension(del_priv, pc, ext);
 
+      if currentlyEnabled(Ext_Sdtrig) then tcontrol_trap_into_mmode();
+
       track_trap(del_priv, is_interrupt, cause);
 
       prepare_trap_vector(del_priv, mcause)
