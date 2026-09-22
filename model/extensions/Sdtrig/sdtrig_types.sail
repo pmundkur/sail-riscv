@@ -584,22 +584,23 @@ function trigger_write_tdata1(idx : trigger_index, t : Trigger, tdata1 : xlenbit
     T_icount(s) => {
       let data = Mk_ICount_bits(tdata1);
       let hit = data[hit];
+      let count = data[count];
       if get_config_print_trigger()
-      then print_log("Set hit for " ^ trigger_name(t) ^ " trigger #" ^ dec_str(idx) ^ " to " ^ bits_str(hit));
-      T_icount({s with hit = bool_bit(hit)})
+      then print_log(trigger_name(t) ^ " trigger #" ^ dec_str(idx) ^ ": hit <- " ^ bits_str(hit) ^ ", count <- " ^ bits_str(count));
+      T_icount({s with hit = bool_bit(hit), count})
     },
     T_itrigger(s) => {
       let data = Mk_IETrigger_bits(tdata1);
       let hit = data[hit];
       if get_config_print_trigger()
-      then print_log("Set hit for " ^ trigger_name(t) ^ " trigger #" ^ dec_str(idx) ^ " to " ^ bits_str(hit));
+      then print_log(trigger_name(t) ^ " trigger #" ^ dec_str(idx) ^ ": hit <- " ^ bits_str(hit));
       T_itrigger({s with hit = bool_bit(hit)})
     },
     T_etrigger(s) => {
       let data = Mk_IETrigger_bits(tdata1);
       let hit = data[hit];
       if get_config_print_trigger()
-      then print_log("Set hit for " ^ trigger_name(t) ^ " trigger #" ^ dec_str(idx) ^ " to " ^ bits_str(hit));
+      then print_log(trigger_name(t) ^ " trigger #" ^ dec_str(idx) ^ ": hit <- " ^ bits_str(hit));
       T_etrigger({s with hit = bool_bit(hit)})
     }
   }
