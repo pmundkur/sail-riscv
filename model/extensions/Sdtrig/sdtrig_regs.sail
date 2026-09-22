@@ -26,6 +26,11 @@ function clause write_CSR(0x7a0, value) = {
   Ok(tselect)
 }
 
+// If a trigger is written to by a CSR write, it might need processing
+// after the current instruction has finished (e.g. the count for
+// `icount` triggers).  Store the index to be processed.
+register written_trigger_idx : option(range(0, num_triggers - 1)) = None()
+
 mapping clause csr_name_map = 0x7a1  <-> "tdata1"
 function clause is_CSR_accessible(0x7a1, _, _) = currentlyEnabled(Ext_Sdtrig)
 function clause read_CSR(0x7a1) = {
@@ -43,6 +48,7 @@ function clause write_CSR(0x7a1, value) = {
   let t = triggers[idx];
   let t = trigger_write_tdata1(idx, t, value);
   triggers[idx] = t;
+  written_trigger_idx = Some(idx);
   Ok(tdata1_of_trigger(t))
 }
 
@@ -62,6 +68,7 @@ function clause write_CSR(0x7a2, value) = {
   assert(idx < sizeof(num_triggers), "write(tdata2): out-of-range tselect: " ^ bits_str(tselect));
   let t = trigger_write_tdata2(idx, triggers[idx], value);
   triggers[idx] = t;
+  written_trigger_idx = Some(idx);
   Ok(tdata2_of_trigger(t))
 }
 
@@ -81,6 +88,7 @@ function clause write_CSR(0x7a3, value) = {
   assert(idx < sizeof(num_triggers), "write(tdata3): out-of-range tselect: " ^ bits_str(tselect));
   let t = trigger_write_tdata3(idx, triggers[idx], value);
   triggers[idx] = t;
+  written_trigger_idx = Some(idx);
   Ok(tdata3_of_trigger(t))
 }
 

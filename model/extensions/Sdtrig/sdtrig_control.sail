@@ -153,7 +153,9 @@ function match_etrigger_triggers(priv : Privilege, exc : ExceptionType) -> unit 
 // take place.
 // TODO: Do not fire triggers in Debug Mode.
 
-function find_highest_priority_pending_trigger(priv : Privilege) -> option((Trig_Action, trigger_index, xlenbits)) = {
+type pending_trigger_info = (Trig_Action, trigger_index, xlenbits)
+
+function find_highest_priority_pending_trigger(priv : Privilege) -> option(pending_trigger_info) = {
   if not(currentlyEnabled(Ext_Sdtrig)) then return None();
 
   foreach (i from 0 to (sizeof(trigger_vector_length) - 1)) {
@@ -201,4 +203,19 @@ function fire_trigger(idx : trigger_index) -> unit = {
   if get_config_print_trigger()
   then print_log("Fired " ^ trigger_name(t) ^ " at index #" ^ dec_str(idx) ^ " with action " ^ trigger_action_name(action));
   trigger_fire_callback(idx);
+}
+
+// update at the end of a step
+
+function update_triggers() -> unit = {
+  match written_trigger_idx {
+    None()    => (),
+    Some(idx) => match triggers[idx] {
+      T_icount(t) => match t.new_count {
+        Some(c) => triggers[idx] = T_icount({t with count = c, new_count = None()}),
+        None()  => (),
+      },
+      _ => (),
+    }
+  }
 }

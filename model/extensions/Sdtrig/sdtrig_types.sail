@@ -264,6 +264,7 @@ struct ICount = {
   pending    : bool,
   s          : bool,
   u          : bool,
+  new_count  : option(bits(14)),
   action     : Trig_Action,
   tdata2     : xlenbits,
   tdata3     : xlenbits,
@@ -499,6 +500,7 @@ function make_trigger(tdata1 : TData1, tdata2 : xlenbits, tdata3 : xlenbits) -> 
           vu = if currentlyEnabled(Ext_H) then bool_bit(v[vu]) else false,
           hit = bool_bit(v[hit]),
           count = if icount_count_is_hardwired_one then zero_extend(0x1) else v[count],
+          new_count = None(),
           m = bool_bit(v[m]),
           pending = bool_bit(v[pending]),
           s = if currentlyEnabled(Ext_S) then bool_bit(v[s]) else false,
@@ -587,7 +589,7 @@ function trigger_write_tdata1(idx : trigger_index, t : Trigger, tdata1 : xlenbit
       let count = data[count];
       if get_config_print_trigger()
       then print_log(trigger_name(t) ^ " trigger #" ^ dec_str(idx) ^ ": hit <- " ^ bits_str(hit) ^ ", count <- " ^ bits_str(count));
-      T_icount({s with hit = bool_bit(hit), count})
+      T_icount({s with hit = bool_bit(hit), new_count = Some(count)})
     },
     T_itrigger(s) => {
       let data = Mk_IETrigger_bits(tdata1);
