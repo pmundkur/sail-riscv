@@ -158,6 +158,7 @@ let sdtrig_has_etrigger : bool = config extensions.Sdtrig.etrigger.supported
 let sdtrig_has_itrigger : bool = config extensions.Sdtrig.itrigger.supported
 
 let sdtrig_has_scontext : bool = false
+let sdtrig_has_hcontext : bool = false
 let sdtrig_has_mcontext : bool = false
 
 type num_triggers : Int = config extensions.Sdtrig.num_triggers

@@ -120,8 +120,6 @@ function tcontrol_mret_from_mmode() -> unit = {
   tcontrol = [tcontrol with mte = tcontrol[mpte]];
 }
 
-// TODO: hcontext @ 0x6a8
-
 register scontext : SContext = Mk_SContext(zeros())
 mapping clause csr_name_map = 0x5a8  <-> "scontext"
 function clause is_CSR_accessible(0x5a8, _, _) = currentlyEnabled(Ext_Sdtrig) & sdtrig_has_scontext
@@ -144,9 +142,18 @@ function clause write_CSR(0x7aa, value) = {
 
 register mcontext : MContext = Mk_MContext(zeros())
 mapping clause csr_name_map = 0x7a8  <-> "mcontext"
-function clause is_CSR_accessible(0x7a8, _, _) = currentlyEnabled(Ext_Sdtrig) & sdtrig_has_mcontext
+function clause is_CSR_accessible(0x7a8, _, _) = currentlyEnabled(Ext_Sdtrig) & (sdtrig_has_mcontext | sdtrig_has_hcontext)
 function clause read_CSR(0x7a8) = mcontext.bits
 function clause write_CSR(0x7a8, value) = {
+  let v = Mk_MContext(value);
+  mcontext = [mcontext with hcontext = v[hcontext]];
+  Ok(mcontext.bits)
+}
+
+mapping clause csr_name_map = 0x6a8  <-> "hcontext"
+function clause is_CSR_accessible(0x6a8, _, _) = currentlyEnabled(Ext_Sdtrig) & currentlyEnabled(Ext_H) & sdtrig_has_hcontext
+function clause read_CSR(0x6a8) = mcontext.bits
+function clause write_CSR(0x6a8, value) = {
   let v = Mk_MContext(value);
   mcontext = [mcontext with hcontext = v[hcontext]];
   Ok(mcontext.bits)
