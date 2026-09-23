@@ -901,6 +901,15 @@
       "tcontrol": {
         "supported": true
       },
+      "mcontext": {
+        "supported": true
+      },
+      "hcontext": {
+        "supported": true
+      },
+      "scontext": {
+        "supported": true
+      },
       // Triggers
       "icount": {
         "supported": true,

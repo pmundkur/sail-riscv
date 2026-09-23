@@ -812,6 +812,14 @@ private function check_misc_extension_dependencies() -> bool = {
       print_endline("Sdtrig breakpoint reentrancy is configured to `Use_tcontrol` but the `tcontrol` CSR is not supported: `Use_tcontrol` requires `tcontrol` to be supported.");
       valid = false;
     };
+    if (config extensions.Sdtrig.hcontext.supported : bool) & not(config extensions.H.supported : bool) then {
+      print_endline("The `hcontext` CSR is supported but the H extension is not: `hcontext` requires H to be supported.");
+      valid = false;
+    };
+    if (config extensions.Sdtrig.hcontext.supported : bool) & not(config extensions.Sdtrig.mcontext.supported : bool) then {
+      print_endline("The `hcontext` CSR is supported but the `mcontext` CSR is not: `hcontext` requires `mcontext` to be supported.");
+      valid = false;
+    };
   };
   valid
 }
