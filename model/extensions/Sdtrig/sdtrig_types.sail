@@ -71,8 +71,9 @@ function is_supported_trigger_type(tt : bits(4)) -> bool = {
 }
 
 function supported_triggers_info() -> bits(16) = {
-  var info : bits(16) = zeros();
   let flag = zero_extend(16, 0b1);
+  // the model disables triggers via type 15, so it is always supported
+  var info : bits(16) = flag << unsigned(trig_type_bits(TT_disabled));
   if sdtrig_has_icount
   then info = info | (flag << unsigned(trig_type_bits(TT_icount)));
   if sdtrig_has_etrigger
