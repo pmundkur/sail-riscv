@@ -157,9 +157,10 @@ let sdtrig_has_icount   : bool = config extensions.Sdtrig.icount.supported
 let sdtrig_has_etrigger : bool = config extensions.Sdtrig.etrigger.supported
 let sdtrig_has_itrigger : bool = config extensions.Sdtrig.itrigger.supported
 
-let sdtrig_has_scontext : bool = false
-let sdtrig_has_hcontext : bool = false
-let sdtrig_has_mcontext : bool = false
+// Sdtrig context CSRs
+let sdtrig_has_mcontext : bool = config extensions.Sdtrig.mcontext.supported
+let sdtrig_has_hcontext : bool = config extensions.Sdtrig.hcontext.supported
+let sdtrig_has_scontext : bool = config extensions.Sdtrig.scontext.supported
 
 type num_triggers : Int = config extensions.Sdtrig.num_triggers
 // The number of bits to index the triggers needs to fit into `tselect`,

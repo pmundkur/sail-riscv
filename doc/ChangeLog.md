@@ -1,7 +1,7 @@
 # Release notes for the next version
 
 - The following extensions have been added:
-  - Sdtrig (partial: only icount, itrigger, and etrigger triggers; tdata3 and {m,h,s}context are not yet supported)
+  - Sdtrig (partial: only icount, itrigger, and etrigger triggers; tdata3 and context CSRs are supported however context matching in textra not yet)
 
 - Updates to the [configuration file](../config/config.json.in):
   - Whether the `mcountinhibit` CSR is supported, and if so, which
