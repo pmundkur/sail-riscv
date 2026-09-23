@@ -119,16 +119,6 @@ function clause write_CSR(0x5a8, value) = {
   Ok(scontext.bits)
 }
 
-// mscontext is an alias for scontext
-mapping clause csr_name_map = 0x7aa  <-> "mscontext"
-function clause is_CSR_accessible(0x7aa, _, _) = currentlyEnabled(Ext_Sdtrig) & sdtrig_has_scontext
-function clause read_CSR(0x7aa) = scontext.bits
-function clause write_CSR(0x7aa, value) = {
-  let v = Mk_SContext(value);
-  scontext = [scontext with data = v[data]];
-  Ok(scontext.bits)
-}
-
 register mcontext : MContext = Mk_MContext(zeros())
 mapping clause csr_name_map = 0x7a8  <-> "mcontext"
 function clause is_CSR_accessible(0x7a8, _, _) = currentlyEnabled(Ext_Sdtrig) & (sdtrig_has_mcontext | sdtrig_has_hcontext)
