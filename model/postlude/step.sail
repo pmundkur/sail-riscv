@@ -135,7 +135,7 @@ private function run_hart_active(step_no: nat) -> Step = {
 
   // `icount` triggers match based on the privilege used for fetching,
   // but the match is performed after the instruction retires, by which time
-  // the privilege might have changed (e.g. the RET instructions).
+  // the privilege might have changed (e.g. the xRET instructions).
   let fetch_priv = cur_privilege;
 
   match ext_fetch_hook(fetch()) {
