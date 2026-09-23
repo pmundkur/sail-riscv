@@ -296,7 +296,6 @@ extension.
   - The HTIF failure exit code is now printed in hex as well as decimal.
   - The test suite has been updated to the latest release (2026-05-29) from sail-riscv-tests.
 
-
 # Release notes for version 0.11
 
 - Updates to the [configuration file](../config/config.json.in):
