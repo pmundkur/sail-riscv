@@ -479,6 +479,9 @@ function make_disabled_trigger(tdata1 : TData1, tdata2 : xlenbits, tdata3 : xlen
                       tdata2 = tdata2,
                       tdata3 = tdata3 })
 
+let supported_etrigger_mask : xlenbits = config extensions.Sdtrig.etrigger.supported_exceptions
+let supported_itrigger_mask : xlenbits = config extensions.Sdtrig.itrigger.supported_interrupts
+
 // TODO: support enabling tdata1.dmode when Debug Mode is supported with Sdext.
 function make_trigger(tdata1 : TData1, tdata2 : xlenbits, tdata3 : xlenbits) -> Trigger = {
   let tt = tdata1[trig_type];
