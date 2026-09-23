@@ -79,7 +79,9 @@ function match_icount_triggers(priv : Privilege) -> unit = {
 
 // TODO: handle NMI interrupts.
 
-function priv_match_itrigger(t : ITrigger, priv : Privilege, intr : InterruptType) -> bool = {
+// `priv` is the privilege at which the interrupt was detected, and
+// `del_priv` is the privilege to which the interrupt will be delivered.
+function priv_match_itrigger(t : ITrigger, priv : Privilege, del_priv : Privilege, intr : InterruptType) -> bool = {
   let priv_match : bool = get_reentrancy_control(t.action, priv) & (match priv {
     Machine           => t.m,
     Supervisor        => t.s,
@@ -88,16 +90,27 @@ function priv_match_itrigger(t : ITrigger, priv : Privilege, intr : InterruptTyp
     VirtualUser       => t.vu,
   });
 
+  // VS-mode interrupts are translated to their S-mode counterparts
+  // before delivery.  Since this function is called with the
+  // delivered interrupts, translate them back before deciding whether
+  // the trigger matches.
+  let intr = if del_priv == VirtualSupervisor then match intr {
+               I_S_External => I_VS_External,
+               I_S_Software => I_VS_Software,
+               I_S_Timer    => I_VS_Timer,
+               _            => intr,
+             } else intr;
+
   priv_match & ((t.tdata2 & make_itrigger_flag(intr)) != zeros())
 }
 
-function match_itrigger_triggers(priv : Privilege, intr : InterruptType) -> unit = {
+function match_itrigger_triggers(priv : Privilege, del_priv : Privilege, intr : InterruptType) -> unit = {
   if not(currentlyEnabled(Ext_Sdtrig)) then return ();
 
   foreach (i from 0 to num_triggers - 1) {
     match triggers[i] {
       T_itrigger(t) =>
-        if priv_match_itrigger(t, priv, intr) then {
+        if priv_match_itrigger(t, priv, del_priv, intr) then {
           triggers[i] = T_itrigger({t with hit = true, match_val = Some(intr)});
 
           if get_config_print_trigger()

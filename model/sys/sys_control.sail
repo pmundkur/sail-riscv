@@ -284,8 +284,10 @@ function trap_handler(
 
   match_icount_triggers(cur_privilege);
   match c {
-    Interrupt(intr) => match_itrigger_triggers(cur_privilege, intr),
-    Exception(struct ExceptionContext { trap = exc, _ }) => match_etrigger_triggers(cur_privilege, exc),
+    Interrupt(intr) =>
+      match_itrigger_triggers(cur_privilege, del_priv, intr),
+    Exception(struct ExceptionContext { trap = exc, _ }) =>
+      match_etrigger_triggers(cur_privilege, exc),
   };
 
   match (del_priv) {
