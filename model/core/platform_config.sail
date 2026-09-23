@@ -152,7 +152,6 @@ let hardware_error_exception_writes_xtval : bool = config base.xtval_nonzero.har
 let reserved_exceptions_write_xtval : bool = config base.xtval_nonzero.reserved_exceptions
 
 // Sdtrig configuration
-let sdtrig_has_tcontrol : bool = config extensions.Sdtrig.tcontrol.supported
 let sdtrig_has_icount   : bool = config extensions.Sdtrig.icount.supported
 let sdtrig_has_etrigger : bool = config extensions.Sdtrig.etrigger.supported
 let sdtrig_has_itrigger : bool = config extensions.Sdtrig.itrigger.supported
@@ -174,6 +173,9 @@ enum Sdtrig_breakpoint_reentrancy = {
   No_reentrancy_support,
 }
 let sdtrig_breakpoint_reentrancy : Sdtrig_breakpoint_reentrancy = config extensions.Sdtrig.breakpoint_reentrancy
+
+// tcontrol only exists for tcontrol-based reentrancy
+let sdtrig_has_tcontrol : bool = sdtrig_breakpoint_reentrancy == Use_tcontrol
 
 // Define the policy for handling reserved behaviors.
 
