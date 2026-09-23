@@ -164,7 +164,8 @@ let sdtrig_has_mcontext : bool = false
 type num_triggers : Int = config extensions.Sdtrig.num_triggers
 // The number of bits to index the triggers needs to fit into `tselect`,
 // but for practical reasons is constrained to be much smaller.
-constraint 0 <= num_triggers <= 15
+constraint 0 <= num_triggers <= 16
+let num_triggers = sizeof(num_triggers)
 
 enum Sdtrig_breakpoint_reentrancy = {
   Use_tcontrol,

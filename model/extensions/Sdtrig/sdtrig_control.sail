@@ -44,7 +44,7 @@ function priv_match_icount(t : ICount, priv : Privilege, act : Trig_Action) -> b
 function match_icount_triggers(priv : Privilege) -> unit = {
   if not(currentlyEnabled(Ext_Sdtrig)) then return ();
 
-  foreach (i from 0 to (sizeof(num_triggers) - 1)) {
+  foreach (i from 0 to num_triggers - 1) {
     match triggers[i] {
       T_icount(t) => {
         if priv_match_icount(t, priv, t.action) then {
@@ -94,7 +94,7 @@ function priv_match_itrigger(t : ITrigger, priv : Privilege, intr : InterruptTyp
 function match_itrigger_triggers(priv : Privilege, intr : InterruptType) -> unit = {
   if not(currentlyEnabled(Ext_Sdtrig)) then return ();
 
-  foreach (i from 0 to (sizeof(num_triggers) - 1)) {
+  foreach (i from 0 to num_triggers - 1) {
     match triggers[i] {
       T_itrigger(t) =>
         if priv_match_itrigger(t, priv, intr) then {
@@ -126,7 +126,7 @@ private function priv_match_etrigger(t : ETrigger, priv : Privilege, e : Excepti
 function match_etrigger_triggers(priv : Privilege, exc : ExceptionType) -> unit = {
   if not(currentlyEnabled(Ext_Sdtrig)) then return ();
 
-  foreach (i from 0 to (sizeof(num_triggers) - 1)) {
+  foreach (i from 0 to num_triggers - 1) {
     match triggers[i] {
       T_etrigger(t) =>
         if priv_match_etrigger(t, priv, exc) then {
@@ -187,7 +187,7 @@ function find_highest_priority_pending_trigger(priv : Privilege) -> option(pendi
 
   var trig_info : option(pending_trigger_info) = None();
 
-  foreach (i from 0 to (sizeof(trigger_vector_length) - 1)) {
+  foreach (i from 0 to num_triggers - 1) {
     match triggers[i] {
       T_disabled(_) => (),
       T_icount(t) =>

@@ -804,7 +804,7 @@ private function check_misc_extension_dependencies() -> bool = {
     valid = valid & check_sha_dependency("Shvstvecd", (config extensions.Shvstvecd.supported : bool));
   };
   if (config extensions.Sdtrig.supported : bool) then {
-    if sizeof(num_triggers) == 0 then {
+    if num_triggers == 0 then {
       print_endline("The Sdtrig extension is supported but `num_triggers` is 0: supporting Sdtrig requires at least 1 trigger.");
       valid = false;
     };

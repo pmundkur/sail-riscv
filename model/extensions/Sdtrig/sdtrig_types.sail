@@ -7,12 +7,11 @@
 // =======================================================================================
 
 // If Sdtrig is implemented, at least one trigger is supported.
-// The upper bound should reflect the constraint checked in the
-// `check_sdtrig()` validator.  It is needed for the typechecker to
-// ensure that it fits into tselect.
+// Config validation ensures `num_triggers` > zero in that case,
+// while schema validation ensures `num_triggers` is non-negative.
 
-type trigger_vector_length = if num_triggers <= 0 then 1 else num_triggers
-type trigger_index = range(0, trigger_vector_length - 1)
+// If `num_triggers` is zero, there is no valid index.
+type trigger_index = range(0, num_triggers - 1)
 
 // Trigger field types and encodings
 enum Trig_Type = {

@@ -8,20 +8,17 @@
 
 function clause currentlyEnabled(Ext_Sdtrig) = hartSupports(Ext_Sdtrig)
 
-// If num_triggers = 0 is allowed (e.g. as in Spike), then it can be
-// handled by returning tdata1 corresponding to TT_none (i.e. zeros())
-// in read_CSR for tdata1 for a tselect of 0.
-register triggers : vector(trigger_vector_length, Trigger) = vector_init(trig_reset_val)
+register triggers : vector(num_triggers, Trigger) = vector_init(trig_reset_val)
 
 register tselect : xlenbits = zeros()
 mapping clause csr_name_map = 0x7a0  <-> "tselect"
 function clause is_CSR_accessible(0x7a0, _, _) = currentlyEnabled(Ext_Sdtrig)
 function clause read_CSR(0x7a0) = tselect
 function clause write_CSR(0x7a0, value) = {
-  if sizeof(num_triggers) == 0
+  if num_triggers <= 0
   then tselect = zeros()
-  else if unsigned(value) >= sizeof(num_triggers)
-  then tselect = to_bits(sizeof(num_triggers) - 1)
+  else if unsigned(value) >= num_triggers
+  then tselect = to_bits(num_triggers - 1)
   else tselect = value;
   Ok(tselect)
 }
@@ -29,22 +26,18 @@ function clause write_CSR(0x7a0, value) = {
 // If a trigger is written to by a CSR write, it might need processing
 // after the current instruction has finished (e.g. the count for
 // `icount` triggers).  Store the index to be processed.
-register written_trigger_idx : option(range(0, num_triggers - 1)) = None()
+register written_trigger_idx : option(trigger_index) = None()
 
 mapping clause csr_name_map = 0x7a1  <-> "tdata1"
 function clause is_CSR_accessible(0x7a1, _, _) = currentlyEnabled(Ext_Sdtrig)
 function clause read_CSR(0x7a1) = {
-  assert(sizeof(num_triggers) != 0);
-
   let idx = unsigned(tselect);
-  assert(idx < sizeof(num_triggers), "read(tdata1): out-of-range tselect: " ^ bits_str(tselect));
+  assert(idx < num_triggers, "read(tdata1): out-of-range tselect: " ^ bits_str(tselect));
   tdata1_of_trigger(triggers[idx])
 }
 function clause write_CSR(0x7a1, value) = {
-  assert(sizeof(num_triggers) != 0);
-
   let idx = unsigned(tselect);
-  assert(idx < sizeof(num_triggers), "write(tdata1): out-of-range tselect: " ^ bits_str(tselect));
+  assert(idx < num_triggers, "write(tdata1): out-of-range tselect: " ^ bits_str(tselect));
   let t = triggers[idx];
   let t = trigger_write_tdata1(idx, t, value);
   triggers[idx] = t;
@@ -55,17 +48,13 @@ function clause write_CSR(0x7a1, value) = {
 mapping clause csr_name_map = 0x7a2  <-> "tdata2"
 function clause is_CSR_accessible(0x7a2, _, _) = currentlyEnabled(Ext_Sdtrig)
 function clause read_CSR(0x7a2) = {
-  assert(sizeof(num_triggers) != 0);
-
   let idx = unsigned(tselect);
-  assert(idx < sizeof(num_triggers), "read(tdata2): out-of-range tselect: " ^ bits_str(tselect));
+  assert(idx < num_triggers, "read(tdata2): out-of-range tselect: " ^ bits_str(tselect));
   tdata2_of_trigger(triggers[idx])
 }
 function clause write_CSR(0x7a2, value) = {
-  assert(sizeof(num_triggers) != 0);
-
   let idx = unsigned(tselect);
-  assert(idx < sizeof(num_triggers), "write(tdata2): out-of-range tselect: " ^ bits_str(tselect));
+  assert(idx < num_triggers, "write(tdata2): out-of-range tselect: " ^ bits_str(tselect));
   let t = trigger_write_tdata2(idx, triggers[idx], value);
   triggers[idx] = t;
   written_trigger_idx = Some(idx);
@@ -75,17 +64,13 @@ function clause write_CSR(0x7a2, value) = {
 mapping clause csr_name_map = 0x7a3  <-> "tdata3"
 function clause is_CSR_accessible(0x7a3, _, _) = currentlyEnabled(Ext_Sdtrig)
 function clause read_CSR(0x7a3) = {
-  assert(sizeof(num_triggers) != 0);
-
   let idx = unsigned(tselect);
-  assert(idx < sizeof(num_triggers), "read(tdata3): out-of-range tselect: " ^ bits_str(tselect));
+  assert(idx < num_triggers, "read(tdata3): out-of-range tselect: " ^ bits_str(tselect));
   tdata3_of_trigger(triggers[idx])
 }
 function clause write_CSR(0x7a3, value) = {
-  assert(sizeof(num_triggers) != 0);
-
   let idx = unsigned(tselect);
-  assert(idx < sizeof(num_triggers), "write(tdata3): out-of-range tselect: " ^ bits_str(tselect));
+  assert(idx < num_triggers, "write(tdata3): out-of-range tselect: " ^ bits_str(tselect));
   let t = trigger_write_tdata3(idx, triggers[idx], value);
   triggers[idx] = t;
   written_trigger_idx = Some(idx);
@@ -95,17 +80,13 @@ function clause write_CSR(0x7a3, value) = {
 mapping clause csr_name_map = 0x7a4  <-> "tinfo"
 function clause is_CSR_accessible(0x7a4, _, _) = currentlyEnabled(Ext_Sdtrig)
 function clause read_CSR(0x7a4) = {
-  assert(sizeof(num_triggers) != 0);
-
   let idx = unsigned(tselect);
-  assert(idx < sizeof(num_triggers), "read(tinfo): out-of-range tselect: " ^ bits_str(tselect));
+  assert(idx < num_triggers, "read(tinfo): out-of-range tselect: " ^ bits_str(tselect));
   tinfo_of_trigger(triggers[idx]).bits
 }
 function clause write_CSR(0x7a4, _value) = {
-  assert(sizeof(num_triggers) != 0);
-
   let idx = unsigned(tselect);
-  assert(idx < sizeof(num_triggers), "write(tinfo): out-of-range tselect: " ^ bits_str(tselect));
+  assert(idx < num_triggers, "write(tinfo): out-of-range tselect: " ^ bits_str(tselect));
   // Writing the tinfo CSR has no effect.
   Ok(tinfo_of_trigger(triggers[idx]).bits)
 }
