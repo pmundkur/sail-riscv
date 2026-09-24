@@ -177,6 +177,12 @@ function mtval_is_readonly_zero() -> bool =
 let sdtrig_has_icount    : bool = config extensions.Sdtrig.icount.supported
 let sdtrig_has_etrigger  : bool = config extensions.Sdtrig.etrigger.supported
 let sdtrig_has_itrigger  : bool = config extensions.Sdtrig.itrigger.supported
+let sdtrig_has_mcontrol6 : bool = config extensions.Sdtrig.mcontrol6.supported
+
+type sdtrig_mcontrol6_maskmax : Int = config extensions.Sdtrig.mcontrol6.maskmax6
+constraint 0 < sdtrig_mcontrol6_maskmax < xlen
+let sdtrig_mcontrol6_maskmax = sizeof(sdtrig_mcontrol6_maskmax)
+let sdtrig_max_chain_limit : int = config extensions.Sdtrig.mcontrol6.max_chain_length
 
 // Sdtrig context CSRs
 let sdtrig_has_mcontext : bool = config extensions.Sdtrig.mcontext.supported
@@ -188,6 +194,12 @@ type num_triggers : Int = config extensions.Sdtrig.num_triggers
 // but for practical reasons is constrained to be much smaller.
 constraint 0 <= num_triggers <= 16
 let num_triggers = sizeof(num_triggers)
+
+// mcontrol6 config
+let sdtrig_zicbom_address_triggers_supported : bool = config extensions.Sdtrig.mcontrol6.zicbom.address_triggers_supported
+let sdtrig_zicboz_data_triggers_supported    : bool = config extensions.Sdtrig.mcontrol6.zicboz.data_triggers_supported
+let sdtrig_zicbop_access_is_store            : bool = config extensions.Sdtrig.mcontrol6.zicbop.access_is_store
+let sdtrig_zicbop_access_is_load             : bool = config extensions.Sdtrig.mcontrol6.zicbop.access_is_load
 
 enum Sdtrig_breakpoint_reentrancy = {
   Use_tcontrol,

@@ -1,9 +1,12 @@
 # Release notes for the next version
 
-- Sdtrig now supports context matching in `textra32` and `textra64`,
-  allowing more precise control over when triggers match and fire.
+- Sdtrig now supports the `mcontrol6` trigger and context matching in
+  `textra32` and `textra64`, allowing more precise control over when
+  triggers match and fire.
 
 - Updates to the [configuration file](../config/config.json.in):
+  - Configuration options have been added for `mcontrol6` in Sdtrig;
+    see `extensions.Sdtrig.mcontrol6`.
   - The supported `textra` context matches for `mhselect` and `sselect`
     and the number of implemented `mhvalue` and `svalue` bits can
     be configured, see `extensions.Sdtrig.textra`.

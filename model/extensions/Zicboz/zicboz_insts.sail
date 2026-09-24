@@ -41,6 +41,12 @@ function clause execute ZICBOZ(rs1) = {
   match get_transformed_data_addr(rs1, negative_offset, access, access_info, cache_block_size) {
     Ext_DataAddr_Error(e) => Ext_DataAddr_Check_Failure(e),
     Ext_DataAddr_OK(vaddr) => {
+
+      match match_memory_trigger_before(cur_privilege, TriggerCacheZero(bits_of(vaddr), cache_block_size)) {
+        Some(pti) => return PendingTrigger(pti),
+        None()    => (),
+      };
+
       // "An implementation may update the bytes in any order and with any granularity
       //  and atomicity, including individual bytes."
       //

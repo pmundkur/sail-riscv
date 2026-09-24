@@ -50,16 +50,25 @@ function clause execute ZICBOP(cbop, rs1, offset) = {
   match get_transformed_data_addr(rs1, offset, access, access_info, cache_block_size) {
     Ext_DataAddr_Error(_) => (), // No access to cache; no-op.
 
-    Ext_DataAddr_OK(vaddr) => match translateAddr(vaddr, access, eff_priv) {
-      Ok(paddr, pbmt, _) => {
-          // Check PMA and PMP access controls.
-          match phys_access_check(access, pbmt, eff_priv, paddr, cache_block_size, false) {
-            Err(_e)  => (), // No access to cache; no-op.
-            Ok(_)    => (), // The model has no caches so there's no action required.
-          }
-      },
-      Err(_) => (), // No access to cache; no-op.
-    }
+    Ext_DataAddr_OK(vaddr) => {
+
+      if   sdtrig_zicbop_access_is_store | sdtrig_zicbop_access_is_load
+      then match match_memory_trigger_before(cur_privilege, TriggerAddress(TriggerAddress_Prefetch, bits_of(vaddr), cache_block_size)) {
+        Some(pti) => return PendingTrigger(pti),
+        None()    => (),
+      };
+
+      match translateAddr(vaddr, access, eff_priv) {
+        Ok(paddr, pbmt, _) => {
+            // Check PMA and PMP access controls.
+            match phys_access_check(access, pbmt, eff_priv, paddr, cache_block_size, false) {
+              Err(_e)  => (), // No access to cache; no-op.
+              Ok(_)    => (), // The model has no caches so there's no action required.
+            }
+        },
+        Err(_) => (), // No access to cache; no-op.
+      }
+    },
   };
 
   RETIRE_SUCCESS

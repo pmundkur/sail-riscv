@@ -92,6 +92,14 @@ private function process_clean_inval(rs1 : regidx, cbop : cbop_zicbom) -> Execut
       // (add the positive offset) to get it. Normally this will be
       // equal to rs1, but pointer masking can change that.
       let vaddr_for_error = vaddr - negative_offset;
+
+      if sdtrig_zicbom_address_triggers_supported then {
+        match match_memory_trigger_before(cur_privilege, TriggerAddress(TriggerAddress_Store, bits_of(vaddr), cache_block_size)) {
+          Some(pti) => return PendingTrigger(pti),
+          None()    => (),
+        };
+      };
+
       // TODO/NOTE: This is weird, we should not translateAddr a different address than specified and report it
       match translateAddr(vaddr, access, eff_priv) {
         Ok(paddr, pbmt, _) => {
