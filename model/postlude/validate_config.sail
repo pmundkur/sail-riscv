@@ -887,6 +887,17 @@ private function check_misc_extension_dependencies() -> bool = {
         print_endline("Bit 3 (Breakpoint) in `base.medeleg.delegatable_bits` is set, but `extensions.Sdtrig.breakpoint_reentrancy` is set to `Use_tcontrol`: `tcontrol`-based reentrancy control hardwires this bit to 0.");
       };
     };
+    if (config extensions.Sdtrig.mcontrol6.supported : bool) then {
+      if sdtrig_mcontrol6_maskmax <= 0 | sdtrig_mcontrol6_maskmax > xlen then {
+        valid = false;
+        print_endline("`extensions.Sdtrig.mcontrol6.maskmax6` is set to " ^ dec_str(sdtrig_mcontrol6_maskmax) ^ ", but needs to be between 1 and `xlen` (" ^ dec_str(xlen) ^ "), inclusive.");
+      };
+      let max_chain_length = config extensions.Sdtrig.mcontrol6.max_chain_length : int;
+      if max_chain_length > num_triggers then {
+        valid = false;
+        print_endline("`extensions.Sdtrig.mcontrol6.max_chain_length` is set to " ^ dec_str(max_chain_length) ^ " which exceeds the number of triggers (" ^ dec_str(num_triggers) ^ ".");
+      };
+    };
   };
   valid
 }
