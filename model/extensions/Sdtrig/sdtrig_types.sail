@@ -568,11 +568,11 @@ function make_trigger(tdata1 : TData1, tdata2 : xlenbits, tdata3 : xlenbits) -> 
   }
 }
 
-// Handle a minimal set of writes to tdata1 registers: disabling via
-// 0-writes, and updates of the `hit` field.  Since all fields are WARL,
-// this is a legal implementation.
+// Handle a minimal set of writes to tdata1 registers: disabling
+// via 0-writes or type 15 writes, and updates of the `hit` field.
+// Since all fields are WARL, this is a legal implementation.
 function trigger_write_tdata1(idx : trigger_index, t : Trigger, tdata1 : xlenbits) -> Trigger = {
-  let disable = tdata1 == zeros();
+  let disable = tdata1 == zeros() | Mk_TData1(tdata1)[trig_type] == trig_type_bits(TT_disabled);
   if disable then {
     if get_config_print_trigger()
     then print_log("Disabling trigger #" ^ dec_str(idx) ^ " (was " ^ trigger_name(t) ^ ").");
