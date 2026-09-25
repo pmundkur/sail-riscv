@@ -45,7 +45,16 @@ function match_icount_triggers(priv : Privilege) -> unit = {
   foreach (i from 0 to num_triggers - 1) {
     match triggers[i] {
       T_icount(t) =>
-        if icount_match(t, priv, t.action) then {
+        // "The only exception to the above is when the instruction the trigger
+        // matched on is a write to the icount trigger. In that case pending might
+        // or might not become set if count was 1.  Afterwards count contains the
+        // newly written value."
+        //
+        // A write to the icount trigger is interpreted as a write via tdata1, since
+        // it is the only way to set count, and not a write to tdata2 or tdata3.
+        // With the write_sets_pending config set to false, a write skips matching,
+        // which only affects pending since update_triggers() restores count anyway.
+        if icount_match(t, priv, t.action) & (icount_write_sets_pending | not(is_some(t.new_count))) then {
           // As implemented, this trigger cannot match for multiple
           // events during a single instruction.
           let new_t : ICount = match unsigned(t.count) {
