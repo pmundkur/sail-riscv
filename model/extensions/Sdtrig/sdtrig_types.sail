@@ -275,6 +275,7 @@ function MControl6_to_bits(t : MControl6) -> MControl6_bits =
   ]
 
 let icount_count_is_hardwired_one : bool = config extensions.Sdtrig.icount.count_hardwired_one
+let icount_write_sets_pending : bool = config extensions.Sdtrig.icount.write_sets_pending
 
 struct ICount = {
   dmode      : bool,
