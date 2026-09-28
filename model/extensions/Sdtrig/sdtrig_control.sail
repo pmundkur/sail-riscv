@@ -90,10 +90,10 @@ function match_itrigger_triggers(priv : Privilege, intr : InterruptType) -> unit
     match triggers[i] {
       T_itrigger(t) =>
         if itrigger_match(t, priv, intr) then {
-          triggers[i] = T_itrigger({t with hit = true, match_val = Some(intr)});
+          triggers[i] = T_itrigger({t with hit = true});
 
           if get_config_print_trigger()
-          then print_log("Matched itrigger at index #" ^ dec_str(i) ^ " with action " ^ trigger_action_name(t.action));
+          then print_log("Interrupt " ^ interruptType_to_str(intr) ^ " matched itrigger at index #" ^ dec_str(i) ^ " with action " ^ trigger_action_name(t.action));
           trigger_match_callback(i);
         },
       _ => (),
@@ -122,10 +122,10 @@ function match_etrigger_triggers(priv : Privilege, exc : ExceptionType) -> unit 
     match triggers[i] {
       T_etrigger(t) =>
         if etrigger_match(t, priv, exc) then {
-          triggers[i] = T_etrigger({t with hit = true, match_val = Some(exc)});
+          triggers[i] = T_etrigger({t with hit = true});
 
           if get_config_print_trigger()
-          then print_log("Matched etrigger at index #" ^ dec_str(i) ^ " with action " ^ trigger_action_name(t.action));
+          then print_log("Exception " ^ exceptionType_to_str(exc) ^ " matched etrigger at index #" ^ dec_str(i) ^ " with action " ^ trigger_action_name(t.action));
           trigger_match_callback(i);
         },
       _ => (),
@@ -144,10 +144,10 @@ function fire_trigger(idx : trigger_index) -> unit = {
       (T_icount({t with pending = false, hit = true}), t.action)
     },
     T_itrigger(t) => {
-      (T_itrigger({t with match_val = None()}), t.action)
+      (T_itrigger(t), t.action)
     },
     T_etrigger(t) => {
-      (T_etrigger({t with match_val = None()}), t.action)
+      (T_etrigger(t), t.action)
     },
     T_disabled(_) => internal_error(__FILE__, __LINE__, "Disabled triggers cannot fire."),
   };
@@ -205,7 +205,7 @@ function find_highest_priority_pending_trigger(priv : Privilege) -> option(pendi
         }
       },
       T_itrigger(t) =>
-        if t.hit & is_some(t.match_val) & not(prevent_reentrance(t.action, priv)) then {
+        if t.hit & not(prevent_reentrance(t.action, priv)) then {
           found_pending = true;
           pending_index  = i;
           pending_action = t.action;
@@ -213,7 +213,7 @@ function find_highest_priority_pending_trigger(priv : Privilege) -> option(pendi
           fire_trigger(i);
         },
       T_etrigger(t) =>
-        if t.hit & is_some(t.match_val) & not(prevent_reentrance(t.action, priv)) then {
+        if t.hit & not(prevent_reentrance(t.action, priv)) then {
           found_pending = true;
           pending_index  = i;
           pending_action = t.action;
