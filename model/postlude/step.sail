@@ -140,8 +140,8 @@ private function run_hart_active(step_no: nat) -> Step = {
       else if currentlyEnabled(Ext_Zca) then {
         nextPC = PC + 2;
         let result : ExecutionResult = match execute(instruction) {
-          ExecuteAs(other_inst) => execute(other_inst),
-          result => result,
+          ExecuteAs(other_inst) => transform_trap_instruction(execute(other_inst), other_inst, true),
+          result => transform_trap_instruction(result, instruction, true),
         };
         Step_Execute(result, instbits)
       } else {
@@ -166,8 +166,8 @@ private function run_hart_active(step_no: nat) -> Step = {
       } else {
         nextPC = PC + 4;
         let result : ExecutionResult = match execute(instruction) {
-          ExecuteAs(other_inst) => execute(other_inst),
-          result => result,
+          ExecuteAs(other_inst) => transform_trap_instruction(execute(other_inst), other_inst, false),
+          result => transform_trap_instruction(result, instruction, false),
         };
         Step_Execute(result, instbits)
       }

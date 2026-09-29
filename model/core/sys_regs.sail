@@ -104,6 +104,8 @@ let sys_vsatp_sv39_supported : bool = config extensions.H.vsatp_modes.Sv39
 let sys_vsatp_sv48_supported : bool = config extensions.H.vsatp_modes.Sv48
 let sys_vsatp_sv57_supported : bool = config extensions.H.vsatp_modes.Sv57
 
+let sys_trap_writes_transformed_instruction : bool = config extensions.H.trap_writes_transformed_instruction
+
 // Whether a guest-page fault writes the faulting guest physical address to
 // htval/mtval2, or writes zero instead. Shtvala requires the address to be
 // written, which validate_config() checks.
