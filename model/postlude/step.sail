@@ -284,6 +284,7 @@ function try_step(step_no : nat, exit_wait : bool) -> bool = {
       if wait_is_nop(wr) then {
         // This is the same as the RETIRE_OK case.
         assert(hart_is_active(hart_state));
+        match_icount_triggers(fetch_priv);
       } else {
         // Transition into the wait state.
         if   get_config_print_instr()
