@@ -38,22 +38,27 @@ private function transformed_instruction(insn : instruction) -> option(bits(32))
     _                                      => None(),
   }
 
-function transform_trap_instruction(result : ExecutionResult, insn : instruction, compressed : bool) -> ExecutionResult =
-  match result {
-    Trap(priv, ctx, pc) if sys_trap_writes_transformed_instruction & currentlyEnabled(Ext_H) & allows_transformed_instruction(ctx.trap) =>
-      match (ctx.excinst, transformed_instruction(insn)) {
-        // Some(_) is the pseudoinstruction from vmem.sail, keep it
-        (None(), Some(tinst)) => {
-          // rs1 holds the Addr. Offset
-          let tinst = [tinst with 19 .. 15 = ctx.excinst_offset];
-          //"For a standard compressed instruction (16-bit size), the transformed instruction is found as follows:
-          //   1. Expand the compressed instruction to its 32-bit equivalent.
-          //   2. Transform the 32-bit equivalent instruction.
-          //   3. Replace bit 1 with a 0."
-          let tinst = if compressed then [tinst with 1 = bitzero] else tinst;
-          Trap(priv, { ctx with excinst = Some(zero_extend(tinst)) }, pc)
-        },
-        _ => result,
+function transform_exception_context(ctx : ExceptionContext, instr_info : instr_info) -> ExceptionContext = {
+  if not(currentlyEnabled(Ext_H) & sys_trap_writes_transformed_instruction & allows_transformed_instruction(ctx.trap))
+  then return ctx;
+
+  // If there is an existing pseudoinstruction (e.g. from vmem.sail), keep it.
+  if is_some(ctx.excinst) then return ctx;
+
+  match instr_info.executed_instruction {
+    None() => ctx,
+    Some(instruction) => match transformed_instruction(instruction) {
+      None() => ctx,
+      Some(tinst) => {
+        // rs1 holds the Addr. Offset
+        let tinst = [tinst with 19 .. 15 = ctx.excinst_offset];
+        //"For a standard compressed instruction (16-bit size), the transformed instruction is found as follows:
+        //   1. Expand the compressed instruction to its 32-bit equivalent.
+        //   2. Transform the 32-bit equivalent instruction.
+        //   3. Replace bit 1 with a 0."
+        let tinst = if instr_info.compressed then [tinst with 1 = bitzero] else tinst;
+        { ctx with excinst = Some(zero_extend(tinst)) }
       },
-    _ => result,
+    }
   }
+}
