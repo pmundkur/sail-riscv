@@ -10,6 +10,7 @@
 
 struct instr_info = {
   fetch_privilege      : Privilege,
+  fetch_reentrance     : bool,
   fetched_instruction  : instruction,
   executed_instruction : option(instruction),
   instbits             : instbits,

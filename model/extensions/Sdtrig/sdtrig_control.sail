@@ -29,8 +29,8 @@ function prevent_reentrance(act: Trig_Action, priv : Privilege) -> bool = {
 
 // icount triggers
 
-function icount_match(t : ICount, priv : Privilege, act : Trig_Action) -> bool = {
-  not(prevent_reentrance(act, priv)) & (match priv {
+function icount_match(t : ICount, priv : Privilege, reentrance : bool) -> bool = {
+  not(t.action == TA_Breakpoint & reentrance) & (match priv {
     Machine           => t.m,
     Supervisor        => t.s,
     User              => t.u,
@@ -39,13 +39,13 @@ function icount_match(t : ICount, priv : Privilege, act : Trig_Action) -> bool =
   })
 }
 
-function match_icount_triggers(priv : Privilege) -> unit = {
+function match_icount_triggers(priv : Privilege, reentrance : bool) -> unit = {
   if not(currentlyEnabled(Ext_Sdtrig)) then return ();
 
   foreach (i from 0 to num_triggers - 1) {
     match triggers[i] {
       T_icount(t) =>
-        if t.active & icount_match(t, priv, t.action) then {
+        if t.active & icount_match(t, priv, reentrance) then {
           // If the trigger matched on a write to the icount trigger
           // with count = 1, pending might (configured with
           // `write_sets_pending` as true) or might not
@@ -207,7 +207,7 @@ function find_highest_priority_pending_trigger(priv : Privilege) -> option(pendi
       T_icount(t) => {
         assert(t.pending ==> t.active);
         // icount triggers fire in a mode where the trigger is enabled.
-        if t.pending & icount_match(t, priv, t.action) then {
+        if t.pending & icount_match(t, priv, prevent_reentrance(TA_Breakpoint, priv)) then {
           found_pending = true;
           pending_index  = i;
           pending_action = t.action;

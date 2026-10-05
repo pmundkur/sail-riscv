@@ -136,6 +136,8 @@ private function run_hart_active(step_no: nat) -> Step = {
   // but the match is performed after the instruction retires, by which time
   // the privilege might have changed (e.g. the xRET instructions).
   let fetch_priv = cur_privilege;
+  // same for reentrancy, xRET restores MIE, SIE or mte
+  let fetch_reentrance = prevent_reentrance(TA_Breakpoint, fetch_priv);
 
   match ext_fetch_hook(fetch()) {
     // extension error
@@ -157,7 +159,7 @@ private function run_hart_active(step_no: nat) -> Step = {
       if is_landing_pad_expected() then {
         let r = trap(make_landing_pad_exception());
         let executed_instruction : option(instruction) = None();
-        let instr_info = struct instr_info { fetch_privilege = cur_privilege, instbits, fetched_instruction, executed_instruction, compressed = true };
+        let instr_info = struct instr_info { fetch_privilege = fetch_priv, fetch_reentrance,instbits, fetched_instruction, executed_instruction, compressed = true };
         Step_Execute(r, instr_info)
       }
       // check for RVC once here instead of every RVC execute clause.
@@ -167,11 +169,11 @@ private function run_hart_active(step_no: nat) -> Step = {
           ExecuteAs(other_inst) => (Some(other_inst), execute(other_inst)),
           result => (Some(fetched_instruction), result),
         };
-        let instr_info = struct instr_info { fetch_privilege = cur_privilege, fetched_instruction, executed_instruction, instbits, compressed = true };
+        let instr_info = struct instr_info { fetch_privilege = fetch_priv, fetch_reentrance,fetched_instruction, executed_instruction, instbits, compressed = true };
         Step_Execute(result, instr_info)
       } else {
         let executed_instruction : option(instruction) = None();
-        let instr_info = struct instr_info { fetch_privilege = cur_privilege, fetched_instruction, executed_instruction, instbits, compressed = true };
+        let instr_info = struct instr_info { fetch_privilege = fetch_priv, fetch_reentrance,fetched_instruction, executed_instruction, instbits, compressed = true };
         Step_Execute(Illegal_Instruction(), instr_info)
       }
     },
@@ -190,7 +192,7 @@ private function run_hart_active(step_no: nat) -> Step = {
       if is_landing_pad_expected() & not(is_lpad_instruction(fetched_instruction)) then {
         let r = trap(make_landing_pad_exception());
         let executed_instruction : option(instruction) = None();
-        let instr_info = struct instr_info { fetch_privilege = cur_privilege, fetched_instruction, executed_instruction, instbits, compressed = false };
+        let instr_info = struct instr_info { fetch_privilege = fetch_priv, fetch_reentrance,fetched_instruction, executed_instruction, instbits, compressed = false };
         Step_Execute(r, instr_info)
       } else {
         nextPC = PC + 4;
@@ -198,7 +200,7 @@ private function run_hart_active(step_no: nat) -> Step = {
           ExecuteAs(other_inst) => (Some(other_inst), execute(other_inst)),
           result => (Some(fetched_instruction), result),
         };
-        let instr_info = struct instr_info { fetch_privilege = cur_privilege, fetched_instruction, executed_instruction, instbits, compressed = false };
+        let instr_info = struct instr_info { fetch_privilege = fetch_priv, fetch_reentrance,fetched_instruction, executed_instruction, instbits, compressed = false };
         Step_Execute(result, instr_info)
       }
     }
@@ -275,7 +277,7 @@ function try_step(step_no : nat, exit_wait : bool) -> bool = {
     Step_Waiting(_) => assert(hart_is_waiting(hart_state), "cannot be Waiting in a non-Wait state"),
     Step_Execute(Retire_Success(), instr_info) => {
       assert(hart_is_active(hart_state));
-      match_icount_triggers(instr_info.fetch_privilege)
+      match_icount_triggers(instr_info.fetch_privilege, instr_info.fetch_reentrance)
     },
     // We only support one level of ExecuteAs redirection, primarily intended
     // for compressed instructions (though it can be used elsewhere). If there
@@ -294,7 +296,7 @@ function try_step(step_no : nat, exit_wait : bool) -> bool = {
       if wait_is_nop(wr) then {
         // This is the same as the RETIRE_OK case.
         assert(hart_is_active(hart_state));
-        match_icount_triggers(instr_info.fetch_privilege);
+        match_icount_triggers(instr_info.fetch_privilege, instr_info.fetch_reentrance);
       } else {
         // Transition into the wait state.
         if   get_config_print_instr()

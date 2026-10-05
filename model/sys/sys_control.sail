@@ -284,7 +284,7 @@ function trap_handler_inner(
 
   let prev_priv = cur_privilege;
   // Match icount before the trap state update, the trap happens in the old mode
-  match_icount_triggers(cur_privilege);
+  match_icount_triggers(prev_priv, prevent_reentrance(TA_Breakpoint, prev_priv));
 
   let tvec : xlenbits = match del_priv {
     Machine => {
