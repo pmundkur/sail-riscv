@@ -282,7 +282,11 @@ function trap_handler_inner(
 
   if hartSupports(Ext_Zicfilp) then zicfilp_preserve_elp_on_trap(del_priv);
 
-  let trap_cause : Mcause = match del_priv {
+  let prev_priv = cur_privilege;
+  // Match icount before the trap state update, the trap happens in the old mode
+  match_icount_triggers(cur_privilege);
+
+  let tvec : xlenbits = match del_priv {
     Machine => {
       mcause[IsInterrupt] = bool_to_bit(is_interrupt);
       mcause[Cause]       = zero_extend(cause);
@@ -299,9 +303,15 @@ function trap_handler_inner(
       mtinst        = tval(excinst);
       mepc          = pc;
 
+      cur_privilege = del_priv;
+
+      handle_trap_extension(del_priv, pc, ext);
+
       if currentlyEnabled(Ext_Sdtrig) then tcontrol_trap_into_mmode();
 
-      mcause
+      track_trap(del_priv, is_interrupt, cause);
+
+      prepare_trap_vector(del_priv, mcause)
     },
     Supervisor => {
       assert (currentlyEnabled(Ext_S), "no supervisor mode present for delegation");
@@ -328,7 +338,13 @@ function trap_handler_inner(
       htinst          = tval(excinst);
       sepc            = pc;
 
-      scause
+      cur_privilege   = del_priv;
+
+      handle_trap_extension(del_priv, pc, ext);
+
+      track_trap(del_priv, is_interrupt, cause);
+
+      prepare_trap_vector(del_priv, scause)
     },
     User              => internal_error(__FILE__, __LINE__, "Invalid privilege level"),
     VirtualUser       => internal_error(__FILE__, __LINE__, "Invalid privilege level"),
@@ -349,29 +365,23 @@ function trap_handler_inner(
       vsepc          = pc;
       vstval         = tval(excinfo);
 
-      vscause
+      cur_privilege  = del_priv;
+
+      handle_trap_extension(del_priv, pc, ext);
+
+      track_trap(del_priv, is_interrupt, cause);
+
+      prepare_trap_vector(del_priv, vscause)
     },
   };
 
-  let prev_priv = cur_privilege;
-  cur_privilege = del_priv;
-
-  handle_trap_extension(cur_privilege, pc, ext);
-
-  track_trap(cur_privilege, is_interrupt, cause);
-
-  let trap_vector = prepare_trap_vector(cur_privilege, trap_cause);
-
-  // Match triggers.
-  match_icount_triggers(prev_priv);
+  // Match after the trap state update so the reentrancy check reads the
+  // handler's MIE or SIE (interrupt-enabled reentrancy) or MTE (tcontrol-based reentrancy).
   match c {
-    Interrupt(intr) =>
-      match_itrigger_triggers(intr, prev_priv, del_priv),
-    Exception(struct ExceptionContext { trap = exc, _ }) =>
-      match_etrigger_triggers(exc, prev_priv, del_priv),
+    Interrupt(intr) => match_itrigger_triggers(intr, prev_priv, del_priv),
+    Exception(ctx)  => match_etrigger_triggers(ctx.trap, prev_priv, del_priv),
   };
-
-  trap_vector
+  tvec
 }
 
 // "When a trap is to be taken into M-mode, if the MDT bit is currently 0, it is
