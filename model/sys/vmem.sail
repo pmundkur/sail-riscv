@@ -568,15 +568,27 @@ private function translate_stage forall 'n 'v, is_sv_or_svx4_mode('v) & 'n >= 'v
 private function translate_vs_stage(
   vaddr  : virtaddr,
   access : MemoryAccessType(mem_payload),
-  p      : Privilege
+  p      : Privilege,
 ) -> TR_Result(gpabits, PTW_Error) = {
   let (stage, mode) = if p == VirtualSupervisor | p == VirtualUser
                       then (VS_Stage, vsatp_mode())
                       else (S_Stage, satp_mode(p));
-  if mode == Bare then return Ok(zero_extend(bits_of(vaddr)), PBMT_PMA, init_ext_ptw);
+
+  address_translation_start_callback(stage, p, zero_extend(bits_of(vaddr)), access);
+
+  if mode == Bare then {
+    address_translated_callback(stage, zero_extend(bits_of(vaddr)), zero_extend(bits_of(vaddr)), access);
+    return Ok(zero_extend(bits_of(vaddr)), PBMT_PMA, init_ext_ptw);
+  };
+
   let sv_width = satp_mode_width(mode);
   assert(sv_width <= xlen);
-  translate_stage(sv_width, bits_of(vaddr), access, p, stage)
+  let result = translate_stage(sv_width, bits_of(vaddr), access, p, stage);
+  match result {
+    Ok(gpa, _, _) => address_translated_callback(stage, zero_extend(bits_of(vaddr)), gpa, access),
+    Err(_) => (),
+  };
+  result
 }
 
 // Wrapper for G-stage translation (takes physaddr).
@@ -585,11 +597,25 @@ function translate_g_stage(
   gpa    : gpabits,
   access : MemoryAccessType(mem_payload),
 ) -> TR_Result(gpabits, PTW_Error) = {
+
+  let stage = G_Stage;
+
+  address_translation_start_callback(stage, User, gpa, access);
+
   let mode = hgatp_mode();
-  if mode == HBare then return Ok(gpa, PBMT_PMA, init_ext_ptw);
+  if mode == HBare then {
+    address_translated_callback(stage, gpa, gpa, access);
+    return Ok(gpa, PBMT_PMA, init_ext_ptw);
+  };
+
   let sv_width = hgatp_mode_width(mode);
   assert(sv_width <= gpalen);
-  translate_stage(sv_width, gpa, access, User, G_Stage)
+  let result = translate_stage(sv_width, gpa, access, User, stage);
+  match result {
+    Ok(spa, _, _) => address_translated_callback(stage, gpa, spa, access),
+    Err(_) => (),
+  };
+  result
 }
 
 // This option tells Sail to unroll the multi-stage translation for theorem prover
@@ -715,10 +741,9 @@ function is_svukte_qualified(
 
 // Top-level addr-translation function
 // PUBLIC: invoked from load-store utils, instr-fetch, atomics and CBOs, etc.
-function translateAddr forall 'n, 0 < 'n <= max_mem_access . (
+function translateAddr(
   gva    : virtaddr,
   access : MemoryAccessType(mem_payload),
-  width  : int('n),
   p      : Privilege
 ) -> TR_Result(physaddr, ExceptionContext) = {
 
@@ -755,23 +780,17 @@ function translateAddr forall 'n, 0 < 'n <= max_mem_access . (
     return Err(make_exception_context(translationException(access, PTW_Invalid_Addr()), zero_extend(bits_of(gva)), is_virtual_access, None()), init_ext_ptw);
   };
 
-  address_translation_start_callback(p, zero_extend(bits_of(gva)), access, width);
-
   // First stage: GVA -> GPA (or VA -> PA for single-stage)
   match translate_vs_stage(gva, access, p) {
     Ok(gpa, vs_pbmt, ext_ptw) => {
-      if not(is_virtual_access) then {
-        address_translated_callback(S_Stage, zero_extend(bits_of(gva)), gpa, access, width);
-        return Ok(Physaddr(gpa), vs_pbmt, ext_ptw)
-      };
-      address_translated_callback(VS_Stage, zero_extend(bits_of(gva)), gpa, access, width);
+      if not(is_virtual_access) then return Ok(Physaddr(gpa), vs_pbmt, ext_ptw);
+
       // Second stage: GPA -> SPA
       match translate_g_stage(gpa, access) {
         Ok(spa, g_pbmt, ext_ptw)  => {
           // A non-zero G-stage PBMT overrides the PMAs to give the intermediate
           // attributes, then a non-zero VS-stage PBMT overrides those in turn.
           let pbmt = if vs_pbmt != PBMT_PMA then vs_pbmt else g_pbmt;
-          address_translated_callback(G_Stage, gpa, spa, access, width);
           Ok(Physaddr(spa), pbmt, ext_ptw)
         },
         // G-Stage failure
