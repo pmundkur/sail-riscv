@@ -83,6 +83,15 @@ jobs:
           cmake -P rocq-sail-riscv.cmake
           # Ignore dune constraints because they come from the fake sail packages
           # Assume depexts because we've already installed cmake, but opam doesn't realise
+          # Disable opam builds for now due to CI issues ...
+          #opam install --yes --verbose --ignore-constraints-on=dune --assume-depexts ./rocq-sail-riscv.opam
+          # ... instead just build directly.
+          cmake -S . -B build-rocq -DCMAKE_BUILD_TYPE=RelWithDebInfo -DDOWNLOAD_GMP=FALSE -DDOWNLOAD_JSONCONS=FALSE -DDOWNLOAD_CLI11=FALSE -DDOWNLOAD_ASIO=FALSE
+          cmake --build build-rocq --target build_rocq_rv64d build_rocq_rv32d
+
+      - name: Install Rocq model
+        run: |
+          eval `opam env --safe`
           opam install --yes --verbose --ignore-constraints-on=dune --assume-depexts ./rocq-sail-riscv.opam
 
       - name: Locate Rocq sources
