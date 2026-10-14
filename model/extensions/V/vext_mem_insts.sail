@@ -140,6 +140,11 @@ function clause execute VLSEGFFTYPE(nf, vm, rs1, width, vd) = {
           let elem_offset = (i * nf + j) * load_width_bytes;
           match vmem_read(rs1, to_bits_unsafe(xlen, elem_offset), load_width_bytes, Load(Vector), false, false, false) {
             Ok(elem) => write_single_element(load_width_bytes * 8, i, vregidx_offset(vd, to_bits_unsafe(5, j * EMUL_reg)), elem),
+            // Debug triggers are not faults, so take them instead of trimming vl.
+            Err(PendingTrigger(pti)) => {
+              set_vstart(to_bits_checked(16, i));
+              return PendingTrigger(pti)
+            },
             Err(e)   => if i == 0 then return e
                         else {
                           vl = to_bits_unsafe(xlen, i);

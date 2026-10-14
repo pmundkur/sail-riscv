@@ -234,7 +234,7 @@ extensions {
     }
 
     V_instructions {
-      requires sys, I, FD, V_types, V_core
+      requires sys, I, FD, V_types, V_core, Sdtrig
       files
         extensions/V/vext_utils_insts.sail,
         extensions/V/vext_fp_utils_insts.sail,
