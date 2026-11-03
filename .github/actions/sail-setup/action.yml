@@ -64,7 +64,7 @@ runs:
       shell: bash
       # This is a Rocky container.
       run: |
-        dnf install -y --enablerepo=devel libstdc++-static make gcc gcc-c++ pkg-config gmp-static ninja-build sudo
+        dnf install -y --enablerepo=devel libstdc++-static make clang pkg-config gmp-static ninja-build sudo
 
     - name: Install latest Clang (Linux runner)
       if: runner.os == 'Linux' && inputs.install-clang == 'true' && job.container == null
